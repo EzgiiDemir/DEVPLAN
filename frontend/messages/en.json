@@ -1,0 +1,425 @@
+{
+  "Metadata": {
+    "title": "DevPlan — From Idea to Code",
+    "description": "The complete project-prep platform from idea to code"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "back": "Back to dashboard",
+    "logout": "Log out",
+    "add": "Add...",
+    "close": "Close",
+    "diagramError": "The diagram could not be rendered.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "completeButton": "Complete module & continue",
+    "completedButton": "Module completed"
+  },
+  "Auth": {
+    "login": {
+      "heading": "Log in to DevPlan",
+      "subheading": "The project-prep platform from idea to code",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "submitting": "Logging in...",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Sign up",
+      "genericError": "Login failed."
+    },
+    "register": {
+      "heading": "Sign up for DevPlan",
+      "subheading": "Get your idea ready for code in 12 steps",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password (min. 8 characters)",
+      "submit": "Sign up",
+      "submitting": "Signing up...",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "genericError": "Sign up failed."
+    }
+  },
+  "Dashboard": {
+    "kicker": "DEVPLAN — PROJECT SCHEMA",
+    "completedPercent": "{pct}% COMPLETE",
+    "statusDone": "Done",
+    "statusTodo": "Waiting",
+    "createProject": {
+      "heading": "Hi {name}, I'm Maya.",
+      "subheading": "Enter a project name and I'll set up the 12 modules for you.",
+      "titlePlaceholder": "Project name",
+      "descriptionPlaceholder": "Short description (optional)",
+      "submit": "Create project",
+      "submitting": "Creating...",
+      "genericError": "Project could not be created."
+    },
+    "switcher": {
+      "newProject": "New project"
+    },
+    "maya": {
+      "heading": "Hi {name}, I'm Maya.",
+      "startBody": "Ready to plan your idea? We'll go through 12 modules together.",
+      "progressBody": "You've completed {pct}%. Shall we pick up where you left off?",
+      "allDoneBody": "You've completed all 12 modules! You're ready to start coding — I'll see you in Studio.",
+      "ctaStart": "Start planning",
+      "ctaContinue": "Continue",
+      "ctaStudio": "Enter Studio"
+    }
+  },
+  "ModulePage": {
+    "notFound": "Module not found.",
+    "placeholder": "This module's interactive interface hasn't been ported yet — it's next. Module {n}/12 ({id})."
+  },
+  "Modules": {
+    "idea": { "title": "Idea Validation", "sub": "Nail the problem and customer, let AI draft the pitch" },
+    "research": { "title": "Market Intelligence", "sub": "Add competitors, validate real demand with AI" },
+    "requirements": { "title": "Product Requirements", "sub": "Extract what the user actually needs" },
+    "mvp_scope": { "title": "MVP Planner", "sub": "Pick what ships first, defer the rest" },
+    "tech_stack": { "title": "Solution Architecture", "sub": "Choose the stack and layers that fit the MVP" },
+    "design": { "title": "UX/UI Designer", "sub": "Sketch the screens, nail down the flows" },
+    "api_design": { "title": "API Designer", "sub": "Generate endpoints from features, export to swagger.yaml" },
+    "folder_structure": { "title": "Project Scaffold", "sub": "Auto-generated folder structure for your stack" },
+    "environment": { "title": "Development Environment", "sub": "Now you can actually start writing code" },
+    "task_plan": { "title": "Sprint Planner", "sub": "Split work into sprints, assign to teams" },
+    "ai_resources": { "title": "AI Stack Manager", "sub": "Decide which AI services you'll rely on" },
+    "prompt_engineering": { "title": "Prompt Studio", "sub": "Rules and prompt templates for your chosen AI tool" }
+  },
+  "IdeaModule": {
+    "intro": "Start from a ready template or fill in from scratch — you can add multiple entries to each box.",
+    "applyTemplate": "Apply {name} template",
+    "templates": {
+      "ecommerce": "E-commerce",
+      "saas": "SaaS",
+      "mobile": "Mobile app"
+    },
+    "templateContent": {
+      "ecommerce": {
+        "problem": ["Small sellers can't open an online store"],
+        "solution": ["Set up a store without writing code"],
+        "customer": ["Small business owners"],
+        "revenue": ["Monthly subscription"],
+        "cost": ["Servers, payment commission"],
+        "channels": ["Instagram ads"]
+      },
+      "saas": {
+        "problem": ["Teams work with scattered tools"],
+        "solution": ["A unified workflow in one panel"],
+        "customer": ["Small-to-medium teams"],
+        "revenue": ["Per-seat subscription"],
+        "cost": ["Cloud infrastructure"],
+        "channels": ["Content marketing, SEO"]
+      },
+      "mobile": {
+        "problem": ["Users can't keep track of a habit"],
+        "solution": ["Daily reminders + tracking"],
+        "customer": ["Individual users"],
+        "revenue": ["Freemium + ads"],
+        "cost": ["App store commission"],
+        "channels": ["App Store / Play Store ASO"]
+      }
+    },
+    "fields": {
+      "problem": "Problem",
+      "solution": "Solution",
+      "customer": "Customer",
+      "revenue": "Revenue",
+      "cost": "Cost",
+      "channels": "Channels"
+    },
+    "toneLabel": "Pitch length:",
+    "tones": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    },
+    "generate": "Generate with AI",
+    "generating": "Generating...",
+    "resultLabel": "Generated pitch",
+    "genericError": "Pitch could not be generated.",
+    "exportPdf": "Export PDF",
+    "pdf": {
+      "title": "Lean Canvas — Idea Validation",
+      "canvasHeading": "Lean Canvas",
+      "pitchHeading": "Pitch",
+      "emptyField": "(not added yet)"
+    }
+  },
+  "ResearchModule": {
+    "intro": "Add a competitor or alternative — AI will use the context from your Idea Validation module to suggest and analyze.",
+    "addPlaceholder": "Type a competitor name...",
+    "getSuggestions": "Get AI suggestions",
+    "suggesting": "Fetching suggestions...",
+    "analyzeAll": "Analyze with AI",
+    "analyzing": "Analyzing...",
+    "notAnalyzed": "Not analyzed yet.",
+    "empty": "No competitors added yet.",
+    "filterPlaceholder": "Search competitors...",
+    "onlyAnalyzed": "Only analyzed",
+    "noMatches": "No matching competitors.",
+    "fields": {
+      "name": "Competitor",
+      "price": "Pricing",
+      "feature": "Standout feature",
+      "pro": "Strength",
+      "con": "Weakness"
+    },
+    "genericError": "The request failed."
+  },
+  "RequirementsModule": {
+    "intro": "Add features for your project, then let AI write a user story for each one. You can adjust the priority (MoSCoW) yourself.",
+    "addPlaceholder": "Type a feature name (e.g. Checkout, Login, Product)...",
+    "empty": "No features added yet.",
+    "generate": "Generate user stories with AI",
+    "generating": "Generating...",
+    "notGenerated": "Not generated yet.",
+    "genericError": "The request failed.",
+    "priorities": {
+      "must": "Must-have",
+      "should": "Should-have",
+      "could": "Could-have",
+      "wont": "Won't-have"
+    }
+  },
+  "MvpScopeModule": {
+    "intro": "Features from the Requirements module were automatically moved onto this drag-and-drop board. Drag cards to reorganize, or ask AI for a recommendation.",
+    "addPlaceholder": "Add a new card...",
+    "empty": "No cards yet — add features and generate user stories in the Requirements module and they'll show up here automatically.",
+    "recommend": "Get AI recommendation",
+    "recommending": "Recommending...",
+    "genericError": "The request failed.",
+    "columns": {
+      "must": "Must Have",
+      "should": "Should Have",
+      "could": "Could Have",
+      "wont": "Won't Have"
+    }
+  },
+  "DesignModule": {
+    "intro": "Import your real page/screen structure from a Figma file, or add it by hand. AI reads your actual screens and derives the database schema, API list, and architecture from that real structure — instead of inventing one from nothing.",
+    "figmaToggle": "Import from Figma",
+    "figmaHelp": "Paste your Figma file link and a personal access token (in your Figma account: Settings → Personal access tokens). The token is never stored anywhere — it's only used for this one import request.",
+    "figmaUrlPlaceholder": "https://www.figma.com/file/...",
+    "figmaTokenPlaceholder": "Figma access token (figd_...)",
+    "import": "Import",
+    "importing": "Importing...",
+    "importError": "Could not import the Figma file.",
+    "addPagePlaceholder": "Type a page/screen name (e.g. Login Screen)...",
+    "empty": "No pages added yet.",
+    "manualGroup": "My pages",
+    "generate": "Generate schema, API & architecture with AI",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "erHeading": "Database (ER Diagram)",
+    "apiHeading": "API Flow",
+    "architectureHeading": "Architecture"
+  },
+  "TechStackModule": {
+    "intro": "Pick a technology from each category, or ask AI for a recommendation based on your project. The AI has no access to live statistics — it gives a qualitative assessment based on its general knowledge, and never hides that.",
+    "recommend": "Get AI stack recommendation",
+    "recommending": "Recommending...",
+    "genericError": "The request failed.",
+    "customPlaceholder": "Or type your own choice...",
+    "aiPick": "AI recommends: {name}.",
+    "useThis": "Use this",
+    "categories": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "database": "Database",
+      "hosting": "Hosting / Infrastructure"
+    }
+  },
+  "ApiDesignModule": {
+    "intro": "If the Design module has pages, its endpoint list was already moved here automatically. Type what you need and let AI generate REST endpoints — then export it as swagger.yaml.",
+    "promptPlaceholder": "e.g. Create ecommerce API",
+    "generate": "Generate endpoints with AI",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "empty": "No endpoints yet.",
+    "requestFields": "Request fields",
+    "responseFields": "Response fields",
+    "exportYaml": "Download swagger.yaml"
+  },
+  "FolderStructureModule": {
+    "intro": "Built from your real choices in Tech Stack, Design, and API Designer — not a generic template, a folder structure specific to your stack and entities.",
+    "generate": "Generate folder structure with AI",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "stackUsed": "Stack used: {frontend} · {backend} · {database}",
+    "exportZip": "Download as ZIP",
+    "exporting": "Preparing..."
+  },
+  "TaskPlanModule": {
+    "intro": "Splits your project into sprints based on the real context from Idea Validation and MVP scope. Drag cards between sprints, check them off as you complete them.",
+    "generate": "Generate sprint plan with AI",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "addSprint": "Add sprint",
+    "newSprintName": "Sprint {n}",
+    "addTaskPlaceholder": "Add a task...",
+    "empty": "No sprints yet.",
+    "progress": "{done} / {total} tasks completed"
+  },
+  "EnvironmentModule": {
+    "intro": "Based on your real stack from the Tech Stack module — generates a real .gitignore, README, docker-compose.yml, and .env.example tailored to those exact languages.",
+    "generate": "Generate environment files with AI",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "stackUsed": "Stack used: {frontend} · {backend} · {database}",
+    "exportZip": "Download all as ZIP"
+  },
+  "PromptEngineeringModule": {
+    "intro": "Define rules for your project — AI combines them with your real tech stack and entities to produce actual instruction files for Claude Code, Cursor, and other AI coding assistants.",
+    "addRulePlaceholder": "Type a rule (e.g. Use TypeScript)...",
+    "generate": "Generate instruction files with AI",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "genericError": "The request failed.",
+    "exportZip": "Download all as ZIP"
+  },
+  "AiResourcesModule": {
+    "intro": "Pick your project type and let AI recommend real, well-known tools across different categories (coding, design, image generation, backend, etc.). The AI has no access to brand-new tools — it only recommends from its established general knowledge.",
+    "projectTypeLabel": "Project type",
+    "customTypePlaceholder": "Or type your own project type...",
+    "generate": "Get AI tool recommendations",
+    "regenerate": "Regenerate",
+    "generating": "Recommending...",
+    "genericError": "The request failed.",
+    "empty": "No tool recommendations yet.",
+    "selectedCount": "{count} tools selected"
+  },
+  "Studio": {
+    "badge": "Preview",
+    "heading": "DevPlan Studio",
+    "subheading": "You've completed all 12 modules — continue coding from here.",
+    "filesLabel": "Files",
+    "mayaLabel": "Maya",
+    "inputPlaceholder": "Coming soon: ask Maya anything...",
+    "chat": [
+      { "from": "maya", "text": "Hi! I put together ProductController based on the endpoints from your API Designer module." },
+      { "from": "user", "text": "Can we sort products by price?" },
+      { "from": "maya", "text": "Sure — I can add orderBy('price') to the index() method. Want me to?" }
+    ]
+  },
+  "Nav": {
+    "modules": "Modules",
+    "maya": "Maya",
+    "studio": "DevPlan Studio",
+    "about": "About",
+    "contact": "Contact",
+    "settings": "Settings",
+    "menuToggle": "Menu"
+  },
+  "About": {
+    "kicker": "ABOUT US",
+    "heading": "We shorten the road from idea to code.",
+    "intro": "DevPlan exists so that anyone holding an idea — a first-time founder or an experienced team — can turn it into a real technical plan. Across 12 modules we work through every decision together, from market research to architecture, from design to sprint planning, until what's left in your hands isn't scattered notes but a project that's ready to be coded.",
+    "pillars": {
+      "validate": { "title": "Validate the idea", "body": "We nail down the problem and the customer first, then let AI draft a real pitch." },
+      "research": { "title": "Research the market", "body": "Add competitors and let AI analyze them for you — validate real demand with data, not assumptions." },
+      "architect": { "title": "Build the architecture", "body": "Plan the technology, API, and folder structure that fits your MVP scope, module by module." },
+      "ship": { "title": "Ship the code", "body": "Once you finish all 12 modules, DevPlan Studio is waiting — your plan turns directly into code." }
+    },
+    "mayaHeading": "You're not alone in this.",
+    "mayaBody": "Maya is the AI assistant that moves through every module with you. She remembers what you entered in earlier modules and suggests the next step accordingly — the market research module automatically takes into account the customer you defined in idea validation."
+  },
+  "MayaIntro": {
+    "kicker": "MAYA",
+    "heading": "Hi {name}, I'm Maya.",
+    "intro": "I'm with you through all 12 modules. At every step I remember what you wrote in earlier modules, so you don't have to explain the same thing twice — however you validated your idea, I carry that context into market research, competitive analysis, and architecture.",
+    "capabilities": {
+      "guides": { "title": "I point you to what's next", "body": "When you finish a module, I tell you what's next and why it matters — no need to go back to the dashboard and hunt for it." },
+      "generates": { "title": "I draft things for you", "body": "From pitch copy to competitor analysis, I put together a first draft from what you've entered — you edit and approve." },
+      "explains": { "title": "I explain my choices", "body": "I always explain why I suggested a given technology, endpoint, or sprint order." }
+    },
+    "ctaHeading": "Pick up where you left off",
+    "ctaBody": "There are modules waiting for you on your dashboard.",
+    "cta": "Go to dashboard"
+  },
+  "Contact": {
+    "kicker": "CONTACT",
+    "heading": "Get in touch",
+    "intro": "Have a question, a feature idea, or just want to say hi? Write to us at the address below.",
+    "emailLabel": "Email",
+    "email": "support@devplan.app",
+    "responseLabel": "Response time",
+    "responseBody": "We usually reply within 1 business day."
+  },
+  "Settings": {
+    "heading": "Settings",
+    "profileHeading": "Profile",
+    "nameLabel": "Full name",
+    "emailLabel": "Email",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "genericError": "The request failed.",
+    "passwordHeading": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password (min. 8 characters)",
+    "confirmPassword": "New password (again)",
+    "changePassword": "Update password",
+    "appearanceHeading": "Appearance",
+    "appearanceBody": "Choose how you want DevPlan and Studio to look.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "projectsHeading": "Your projects",
+    "projectsEmpty": "You don't have a project yet.",
+    "billingHeading": "Subscription",
+    "plans": {
+      "free": { "name": "Free", "price": "$0 / month", "body": "1 project, all 12 modules, basic AI usage." },
+      "pro": { "name": "Pro", "price": "$19 / month", "body": "Unlimited projects, priority AI responses, expanded file space in Studio." },
+      "team": { "name": "Team", "price": "$49 / month", "body": "Everything in Pro, plus projects shared with your teammates." }
+    },
+    "paymentMethodEmpty": "No payment method on file",
+    "comingSoon": "Coming soon",
+    "billingHistoryEmpty": "You don't have any billing history yet.",
+    "logout": "Log out"
+  },
+  "Marketing": {
+    "nav": { "login": "Log in", "register": "Sign up", "dashboard": "Go to dashboard" },
+    "hero": {
+      "kicker": "FROM IDEA TO CODE, IN 12 MODULES",
+      "heading": "Turn your idea into a project that's ready to be coded.",
+      "sub": "DevPlan walks you through market research, architecture, design, and sprint planning alongside your AI assistant, Maya. By the time you finish the last module, you're ready to write code.",
+      "ctaPrimary": "Start for free",
+      "ctaSecondary": "Log in"
+    },
+    "modules": {
+      "kicker": "WHAT WE OFFER",
+      "heading": "12 modules, one flow",
+      "sub": "Each module builds on the last — the customer you defined in idea validation carries into market research's competitor suggestions, all the way to the endpoints in API design.",
+      "footnote": "Plus 6 more: product requirements, MVP planning, project scaffold, sprint planning, AI stack management, and prompt studio."
+    },
+    "maya": {
+      "kicker": "YOUR AI ASSISTANT",
+      "heading": "Maya moves through it with you",
+      "body": "Maya is the AI assistant working alongside you in every module. She remembers what you entered earlier, suggests the next step, and drafts a first version for you — instead of starting from a blank page, you edit and approve.",
+      "voiceover": "\"Hi, I'm Maya. Don't know where to start? Then you're in exactly the right place. The 12 modules I offer will help you build your own product from scratch and guide you through the right steps to make real progress. Then, in Maya Studio, we'll scale your product together. What makes us different? Your projects won't be left half-finished anymore — knowing exactly what you're doing, you'll track every step with total confidence.\""
+    },
+    "studio": {
+      "kicker": "DEVPLAN CODE STUDIO",
+      "heading": "Finish 12 modules, and the editor is waiting",
+      "body": "DevPlan Studio turns the APIs you planned, the stack you chose, and the flows you designed into real code. Maya is there too — explaining what she changed and why."
+    },
+    "testimonials": {
+      "heading": "What people building with us say",
+      "items": {
+        "one": { "quote": "I'd been turning my idea over in my head for three weeks. With DevPlan I had a real architecture and API list in a day.", "name": "Elif A.", "initials": "EA", "role": "Founder, early-stage startup" },
+        "two": { "quote": "Maya carrying context from the previous module actually makes a difference — I'm not explaining everything from scratch each time.", "name": "Baris K.", "initials": "BK", "role": "Product manager" },
+        "three": { "quote": "Thanks to the sprint planning module, splitting work across my team doesn't eat up half a day anymore.", "name": "Selin Y.", "initials": "SY", "role": "Technical team lead" }
+      }
+    },
+    "contact": {
+      "heading": "Got a question?",
+      "body": "Write to us with a question, a suggestion, or just to say hello.",
+      "email": "support@devplan.app"
+    },
+    "footer": {
+      "rights": "© 2026 DevPlan. All rights reserved."
+    }
+  }
+}

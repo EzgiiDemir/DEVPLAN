@@ -1,0 +1,425 @@
+{
+  "Metadata": {
+    "title": "DevPlan — Fikirden Koda",
+    "description": "Fikirden koda tam kapsamlı proje hazırlık platformu"
+  },
+  "Common": {
+    "loading": "Yükleniyor...",
+    "back": "Panoya dön",
+    "logout": "Çıkış yap",
+    "add": "Ekle...",
+    "close": "Kapat",
+    "diagramError": "Diyagram oluşturulamadı.",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "completeButton": "Modülü tamamla ve ilerle",
+    "completedButton": "Modül tamamlandı"
+  },
+  "Auth": {
+    "login": {
+      "heading": "DevPlan'a giriş yap",
+      "subheading": "Fikirden koda proje hazırlık platformu",
+      "email": "E-posta",
+      "password": "Şifre",
+      "submit": "Giriş yap",
+      "submitting": "Giriş yapılıyor...",
+      "noAccount": "Hesabın yok mu?",
+      "registerLink": "Kayıt ol",
+      "genericError": "Giriş başarısız."
+    },
+    "register": {
+      "heading": "DevPlan'a kayıt ol",
+      "subheading": "Fikrini 12 adımda kod yazmaya hazırla",
+      "name": "Ad Soyad",
+      "email": "E-posta",
+      "password": "Şifre (en az 8 karakter)",
+      "submit": "Kayıt ol",
+      "submitting": "Kayıt olunuyor...",
+      "haveAccount": "Zaten hesabın var mı?",
+      "loginLink": "Giriş yap",
+      "genericError": "Kayıt başarısız."
+    }
+  },
+  "Dashboard": {
+    "kicker": "DEVPLAN — PROJE ŞEMASI",
+    "completedPercent": "{pct}% TAMAMLANDI",
+    "statusDone": "Tamamlandı",
+    "statusTodo": "Bekliyor",
+    "createProject": {
+      "heading": "Merhaba {name}, ben Maya.",
+      "subheading": "Proje adını gir, 12 modül senin için otomatik hazırlansın.",
+      "titlePlaceholder": "Proje adı",
+      "descriptionPlaceholder": "Kısa açıklama (opsiyonel)",
+      "submit": "Projeyi oluştur",
+      "submitting": "Oluşturuluyor...",
+      "genericError": "Proje oluşturulamadı."
+    },
+    "switcher": {
+      "newProject": "Yeni proje"
+    },
+    "maya": {
+      "heading": "Merhaba {name}, ben Maya.",
+      "startBody": "Fikrini planlamaya hazır mısın? Seninle birlikte 12 modülde ilerleyeceğiz.",
+      "progressBody": "{pct}% tamamladın. Kaldığın yerden devam edelim mi?",
+      "allDoneBody": "12 modülü de tamamladın! Artık kodlamaya geçmeye hazırsın — Studio'ya bekliyorum.",
+      "ctaStart": "Planlamaya Başla",
+      "ctaContinue": "Devam Et",
+      "ctaStudio": "Studio'ya Gir"
+    }
+  },
+  "ModulePage": {
+    "notFound": "Modül bulunamadı.",
+    "placeholder": "Bu modülün etkileşimli arayüzü henüz taşınmadı — sırada. Modül {n}/12 ({id})."
+  },
+  "Modules": {
+    "idea": { "title": "Fikir Doğrulama", "sub": "Problemi ve müşteriyi netleştir, AI pitch'ini üretsin" },
+    "research": { "title": "Pazar Analizi", "sub": "Rakipleri ekle, gerçek talebi AI ile doğrula" },
+    "requirements": { "title": "Ürün Gereksinimleri", "sub": "Kullanıcının gerçekten ne istediğini çıkar" },
+    "mvp_scope": { "title": "MVP Planlayıcı", "sub": "İlk sürüme gireceklerini seç, gerisini ertele" },
+    "tech_stack": { "title": "Çözüm Mimarisi", "sub": "MVP'ye uygun teknoloji ve katmanları seç" },
+    "design": { "title": "UX/UI Tasarımcı", "sub": "Ekranları çiz, wireframe ve akışları netleştir" },
+    "api_design": { "title": "API Tasarımcı", "sub": "Özelliklerden endpoint üret, swagger.yaml'a aktar" },
+    "folder_structure": { "title": "Proje İskeleti", "sub": "Stack'e göre otomatik klasör yapısı" },
+    "environment": { "title": "Geliştirme Ortamı", "sub": "Artık gerçekten kod yazmaya başla" },
+    "task_plan": { "title": "Sprint Planlayıcı", "sub": "İşleri sprintlere ve ekiplere dağıt" },
+    "ai_resources": { "title": "AI Araç Yöneticisi", "sub": "Hangi AI servislerini kullanacağını netleştir" },
+    "prompt_engineering": { "title": "Prompt Stüdyosu", "sub": "Seçtiğin AI aracına özel kurallar ve promptlar" }
+  },
+  "IdeaModule": {
+    "intro": "Hazır şablonla başla veya sıfırdan doldur — her kutuya birden fazla madde ekleyebilirsin.",
+    "applyTemplate": "{name} şablonu uygula",
+    "templates": {
+      "ecommerce": "E-ticaret",
+      "saas": "SaaS",
+      "mobile": "Mobil uygulama"
+    },
+    "templateContent": {
+      "ecommerce": {
+        "problem": ["Küçük satıcılar online mağaza açamıyor"],
+        "solution": ["Kod yazmadan mağaza kurma"],
+        "customer": ["Küçük işletme sahipleri"],
+        "revenue": ["Aylık abonelik"],
+        "cost": ["Sunucu, ödeme komisyonu"],
+        "channels": ["Instagram reklamları"]
+      },
+      "saas": {
+        "problem": ["Ekipler dağınık araçlarla çalışıyor"],
+        "solution": ["Tek panelde birleşik iş akışı"],
+        "customer": ["Küçük-orta ekipler"],
+        "revenue": ["Kullanıcı başı abonelik"],
+        "cost": ["Bulut altyapı"],
+        "channels": ["İçerik pazarlama, SEO"]
+      },
+      "mobile": {
+        "problem": ["Kullanıcılar alışkanlığı takip edemiyor"],
+        "solution": ["Günlük hatırlatma + takip"],
+        "customer": ["Bireysel kullanıcılar"],
+        "revenue": ["Freemium + reklam"],
+        "cost": ["App store komisyonu"],
+        "channels": ["App Store / Play Store ASO"]
+      }
+    },
+    "fields": {
+      "problem": "Problem",
+      "solution": "Solution",
+      "customer": "Customer",
+      "revenue": "Revenue",
+      "cost": "Cost",
+      "channels": "Channels"
+    },
+    "toneLabel": "Pitch uzunluğu:",
+    "tones": {
+      "short": "Kısa",
+      "medium": "Orta",
+      "long": "Uzun"
+    },
+    "generate": "AI ile pitch üret",
+    "generating": "Üretiliyor...",
+    "resultLabel": "Üretilen pitch",
+    "genericError": "Pitch üretilemedi.",
+    "exportPdf": "PDF indir",
+    "pdf": {
+      "title": "Lean Canvas — Fikir Doğrulama",
+      "canvasHeading": "Lean Canvas",
+      "pitchHeading": "Pitch",
+      "emptyField": "(henüz eklenmedi)"
+    }
+  },
+  "ResearchModule": {
+    "intro": "Rakip veya alternatif ekle — AI, Fikir Doğrulama modülünde girdiğin bağlamı kullanarak öneri ve analiz yapacak.",
+    "addPlaceholder": "Rakip adı yaz...",
+    "getSuggestions": "AI'dan öneri al",
+    "suggesting": "Öneriler getiriliyor...",
+    "analyzeAll": "AI ile analiz et",
+    "analyzing": "Analiz ediliyor...",
+    "notAnalyzed": "Henüz analiz edilmedi.",
+    "empty": "Henüz rakip eklenmedi.",
+    "filterPlaceholder": "Rakip ara...",
+    "onlyAnalyzed": "Sadece analiz edilenler",
+    "noMatches": "Eşleşen rakip yok.",
+    "fields": {
+      "name": "Rakip",
+      "price": "Fiyatlandırma",
+      "feature": "Öne çıkan özellik",
+      "pro": "Güçlü yönü",
+      "con": "Zayıf yönü"
+    },
+    "genericError": "İstek başarısız oldu."
+  },
+  "RequirementsModule": {
+    "intro": "Projen için özellik ekle, ardından AI her biri için bir user story yazsın. Önceliği (MoSCoW) kendin ayarlayabilirsin.",
+    "addPlaceholder": "Özellik adı yaz (ör. Ödeme, Giriş, Ürün)...",
+    "empty": "Henüz özellik eklenmedi.",
+    "generate": "AI ile user story oluştur",
+    "generating": "Oluşturuluyor...",
+    "notGenerated": "Henüz oluşturulmadı.",
+    "genericError": "İstek başarısız oldu.",
+    "priorities": {
+      "must": "Zorunlu",
+      "should": "Olmalı",
+      "could": "Olabilir",
+      "wont": "Şimdilik yok"
+    }
+  },
+  "MvpScopeModule": {
+    "intro": "Gereksinimler modülünden gelen özellikler otomatik olarak sürükle-bırak panosuna taşındı. Kartları sürükleyerek yeniden düzenle veya AI'dan öneri iste.",
+    "addPlaceholder": "Yeni kart ekle...",
+    "empty": "Henüz kart yok — Gereksinimler modülünde özellik ekleyip user story oluşturursan burada otomatik görünür.",
+    "recommend": "AI önerisi al",
+    "recommending": "Öneriliyor...",
+    "genericError": "İstek başarısız oldu.",
+    "columns": {
+      "must": "Must Have",
+      "should": "Should Have",
+      "could": "Could Have",
+      "wont": "Won't Have"
+    }
+  },
+  "DesignModule": {
+    "intro": "Gerçek bir Figma dosyasından sayfa/ekran yapını içe aktar veya elle ekle. AI, ekranlarına bakıp veritabanı şemasını, API listesini ve mimariyi bu gerçek yapıdan çıkarsın — yoktan var etmesin.",
+    "figmaToggle": "Figma'dan içe aktar",
+    "figmaHelp": "Figma dosya bağlantını ve kişisel erişim anahtarını (Figma hesabında Settings → Personal access tokens) yapıştır. Anahtarın hiçbir yerde saklanmaz, sadece bu içe aktarma isteği için kullanılır.",
+    "figmaUrlPlaceholder": "https://www.figma.com/file/...",
+    "figmaTokenPlaceholder": "Figma erişim anahtarı (figd_...)",
+    "import": "İçe aktar",
+    "importing": "İçe aktarılıyor...",
+    "importError": "Figma dosyası içe aktarılamadı.",
+    "addPagePlaceholder": "Sayfa/ekran adı yaz (ör. Giriş Ekranı)...",
+    "empty": "Henüz sayfa eklenmedi.",
+    "manualGroup": "Sayfalarım",
+    "generate": "AI ile şema, API ve mimari oluştur",
+    "generating": "Oluşturuluyor...",
+    "genericError": "İstek başarısız oldu.",
+    "erHeading": "Veritabanı (ER Diyagramı)",
+    "apiHeading": "API Akışı",
+    "architectureHeading": "Mimari"
+  },
+  "TechStackModule": {
+    "intro": "Her kategoriden bir teknoloji seç veya AI'dan projene göre öneri iste. AI'nın canlı istatistiklere erişimi yok — genel bilgisine dayanarak nitel bir değerlendirme sunar, bunu asla gizlemez.",
+    "recommend": "AI ile stack önerisi al",
+    "recommending": "Öneriliyor...",
+    "genericError": "İstek başarısız oldu.",
+    "customPlaceholder": "Ya da kendi seçimini yaz...",
+    "aiPick": "AI önerisi: {name}.",
+    "useThis": "Bunu kullan",
+    "categories": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "database": "Veritabanı",
+      "hosting": "Hosting / Altyapı"
+    }
+  },
+  "ApiDesignModule": {
+    "intro": "Tasarım modülünden gelen sayfalar varsa endpoint listesi otomatik olarak buraya taşındı. Ne istediğini yaz, AI sana REST endpoint'leri üretsin — sonra swagger.yaml olarak dışa aktar.",
+    "promptPlaceholder": "Örn: Create ecommerce API",
+    "generate": "AI ile endpoint üret",
+    "generating": "Üretiliyor...",
+    "genericError": "İstek başarısız oldu.",
+    "empty": "Henüz endpoint yok.",
+    "requestFields": "İstek alanları",
+    "responseFields": "Yanıt alanları",
+    "exportYaml": "swagger.yaml indir"
+  },
+  "FolderStructureModule": {
+    "intro": "Teknoloji Seçimi, Tasarım ve API Tasarımcı modüllerindeki gerçek seçimlerine göre — genel bir şablon değil, senin stack'ine ve varlıklarına özel bir klasör yapısı oluşturur.",
+    "generate": "AI ile klasör yapısı oluştur",
+    "regenerate": "Yeniden oluştur",
+    "generating": "Oluşturuluyor...",
+    "genericError": "İstek başarısız oldu.",
+    "stackUsed": "Kullanılan stack: {frontend} · {backend} · {database}",
+    "exportZip": "ZIP olarak indir",
+    "exporting": "Hazırlanıyor..."
+  },
+  "TaskPlanModule": {
+    "intro": "Fikir ve MVP kapsamındaki gerçek bağlama göre projeni sprint'lere böl. Kartları sürükleyerek sprint'ler arasında taşı, işaretleyerek tamamla.",
+    "generate": "AI ile sprint planı oluştur",
+    "regenerate": "Yeniden oluştur",
+    "generating": "Oluşturuluyor...",
+    "genericError": "İstek başarısız oldu.",
+    "addSprint": "Sprint ekle",
+    "newSprintName": "Sprint {n}",
+    "addTaskPlaceholder": "Görev ekle...",
+    "empty": "Henüz sprint yok.",
+    "progress": "{done} / {total} görev tamamlandı"
+  },
+  "EnvironmentModule": {
+    "intro": "Teknoloji Seçimi modülündeki gerçek stack'ine göre — o dillere özel gerçek .gitignore, README, docker-compose.yml ve .env.example dosyaları üretir.",
+    "generate": "AI ile ortam dosyalarını oluştur",
+    "regenerate": "Yeniden oluştur",
+    "generating": "Oluşturuluyor...",
+    "genericError": "İstek başarısız oldu.",
+    "stackUsed": "Kullanılan stack: {frontend} · {backend} · {database}",
+    "exportZip": "Tümünü ZIP olarak indir"
+  },
+  "PromptEngineeringModule": {
+    "intro": "Projen için kurallar tanımla — AI bu kuralları teknoloji yığınınla ve varlıklarınla birleştirip Claude Code, Cursor ve diğer AI kodlama asistanları için gerçek talimat dosyaları üretsin.",
+    "addRulePlaceholder": "Kural yaz (ör. Use TypeScript)...",
+    "generate": "AI ile talimat dosyaları oluştur",
+    "regenerate": "Yeniden oluştur",
+    "generating": "Oluşturuluyor...",
+    "genericError": "İstek başarısız oldu.",
+    "exportZip": "Tümünü ZIP olarak indir"
+  },
+  "AiResourcesModule": {
+    "intro": "Proje tipini seç, AI farklı kategorilerden (kodlama, tasarım, görsel üretim, backend vb.) gerçek ve bilinen araçlar önersin. AI'nın yeni çıkan araçlara anlık erişimi yok — sadece köklü, genel bilgisine dayanarak önerir.",
+    "projectTypeLabel": "Proje tipi",
+    "customTypePlaceholder": "Ya da kendi proje tipini yaz...",
+    "generate": "AI ile araç önerisi al",
+    "regenerate": "Yeniden oluştur",
+    "generating": "Öneriliyor...",
+    "genericError": "İstek başarısız oldu.",
+    "empty": "Henüz araç önerisi yok.",
+    "selectedCount": "{count} araç seçildi"
+  },
+  "Studio": {
+    "badge": "Önizleme",
+    "heading": "DevPlan Studio",
+    "subheading": "12 modülü tamamladın — kodlamaya buradan devam et.",
+    "filesLabel": "Dosyalar",
+    "mayaLabel": "Maya",
+    "inputPlaceholder": "Yakında: Maya'ya soru sor...",
+    "chat": [
+      { "from": "maya", "text": "Merhaba! API Tasarımcı modülünden aldığım endpoint'lere göre ProductController'ı hazırladım." },
+      { "from": "user", "text": "Ürünleri fiyata göre sıralayabilir miyiz?" },
+      { "from": "maya", "text": "Elbette — index() metoduna orderBy('price') ekleyebilirim. Onaylıyor musun?" }
+    ]
+  },
+  "Nav": {
+    "modules": "Modüller",
+    "maya": "Maya",
+    "studio": "DevPlan Studio",
+    "about": "Hakkımızda",
+    "contact": "İletişim",
+    "settings": "Ayarlar",
+    "menuToggle": "Menü"
+  },
+  "About": {
+    "kicker": "HAKKIMIZDA",
+    "heading": "Fikirden koda giden yolu kısaltıyoruz.",
+    "intro": "DevPlan, bir fikri elinde tutan herkesin — ister ilk kez girişimci olsun, ister deneyimli bir ekip — o fikri gerçek bir teknik plana dönüştürmesi için var. 12 modülde pazar araştırmasından mimariye, tasarımdan sprint planına kadar her karar adımını birlikte atıyoruz; sonunda elinizde rastgele notlar değil, kodlanmaya hazır bir proje kalıyor.",
+    "pillars": {
+      "validate": { "title": "Fikri doğrula", "body": "Önce problemi ve müşteriyi netleştiriyoruz, sonra AI ile gerçek bir pitch üretiyoruz." },
+      "research": { "title": "Pazarı araştır", "body": "Rakipleri ekle, AI onları senin için analiz etsin — gerçek talebi varsayımla değil veriyle doğrula." },
+      "architect": { "title": "Mimariyi kur", "body": "MVP kapsamına uygun teknoloji, API ve klasör yapısını modül modül planla." },
+      "ship": { "title": "Koda geç", "body": "12 modülü bitirdiğinde DevPlan Studio seni bekliyor — planın doğrudan koda dönüşüyor." }
+    },
+    "mayaHeading": "Bu süreçte yalnız değilsin.",
+    "mayaBody": "Maya, her modülde seninle birlikte ilerleyen AI asistanın. Önceki modüllerde girdiğin bilgileri hatırlar ve sıradaki adımı ona göre önerir — pazar analizi modülü, fikir modülünde yazdığın müşteri tanımını otomatik olarak dikkate alır."
+  },
+  "MayaIntro": {
+    "kicker": "MAYA",
+    "heading": "Merhaba {name}, ben Maya.",
+    "intro": "12 modül boyunca yanındayım. Her adımda önceki modüllerde ne yazdığını hatırlıyorum, böylece aynı şeyi tekrar tekrar açıklaman gerekmiyor — fikrini nasıl doğruladıysan, pazar analizini de rekabeti de mimarisini de o bağlamla ilerletiyorum.",
+    "capabilities": {
+      "guides": { "title": "Seni sıradaki adıma yönlendiririm", "body": "Bir modülü tamamladığında, sırada ne olduğunu ve neden önemli olduğunu söylerim — dashboard'a dönüp tekrar aramana gerek yok." },
+      "generates": { "title": "Senin için taslak üretirim", "body": "Pitch metninden rakip analizine kadar, girdiğin bilgilerden yola çıkarak ilk taslağı ben hazırlarım; sen düzenleyip onaylarsın." },
+      "explains": { "title": "Kararlarımı açıklarım", "body": "Neden bu teknolojiyi, bu endpoint'i ya da bu sprint sırasını önerdiğimi her zaman gerekçesiyle anlatırım." }
+    },
+    "ctaHeading": "Kaldığın yerden devam et",
+    "ctaBody": "Panelinde seni bekleyen modüller var.",
+    "cta": "Panele git"
+  },
+  "Contact": {
+    "kicker": "İLETİŞİM",
+    "heading": "Bize ulaş",
+    "intro": "Bir sorunun mu var, bir özellik önerin mi var, yoksa sadece merhaba mı demek istiyorsun? Aşağıdaki adresten bize yazabilirsin.",
+    "emailLabel": "E-posta",
+    "email": "destek@devplan.app",
+    "responseLabel": "Yanıt süresi",
+    "responseBody": "Genellikle 1 iş günü içinde dönüş yapıyoruz."
+  },
+  "Settings": {
+    "heading": "Ayarlar",
+    "profileHeading": "Profil",
+    "nameLabel": "Ad Soyad",
+    "emailLabel": "E-posta",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "saved": "Kaydedildi",
+    "genericError": "İşlem başarısız oldu.",
+    "passwordHeading": "Şifre değiştir",
+    "currentPassword": "Mevcut şifre",
+    "newPassword": "Yeni şifre (en az 8 karakter)",
+    "confirmPassword": "Yeni şifre (tekrar)",
+    "changePassword": "Şifreyi güncelle",
+    "appearanceHeading": "Görünüm",
+    "appearanceBody": "DevPlan'ı ve Studio'yu nasıl görmek istediğini seç.",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "projectsHeading": "Projelerin",
+    "projectsEmpty": "Henüz bir projen yok.",
+    "billingHeading": "Abonelik",
+    "plans": {
+      "free": { "name": "Ücretsiz", "price": "0 ₺ / ay", "body": "1 proje, 12 modülün tamamı, temel AI kullanımı." },
+      "pro": { "name": "Pro", "price": "249 ₺ / ay", "body": "Sınırsız proje, öncelikli AI yanıtları, Studio'da genişletilmiş dosya alanı." },
+      "team": { "name": "Takım", "price": "699 ₺ / ay", "body": "Pro'daki her şey + ekip üyeleriyle paylaşılan projeler." }
+    },
+    "paymentMethodEmpty": "Kayıtlı ödeme yöntemi yok",
+    "comingSoon": "Yakında",
+    "billingHistoryEmpty": "Henüz bir fatura geçmişin yok.",
+    "logout": "Çıkış yap"
+  },
+  "Marketing": {
+    "nav": { "login": "Giriş yap", "register": "Kayıt ol", "dashboard": "Panele git" },
+    "hero": {
+      "kicker": "FİKİRDEN KODA, 12 MODÜLDE",
+      "heading": "Fikrini, yazılmaya hazır bir projeye dönüştür.",
+      "sub": "DevPlan; pazar araştırmasından mimariye, tasarımdan sprint planına kadar her adımda AI asistanın Maya ile birlikte ilerlemeni sağlar. Son modülü bitirdiğinde kod yazmaya hazırsındır.",
+      "ctaPrimary": "Ücretsiz başla",
+      "ctaSecondary": "Giriş yap"
+    },
+    "modules": {
+      "kicker": "NELER SUNUYORUZ",
+      "heading": "12 modül, tek bir akış",
+      "sub": "Her modül bir öncekinin çıktısını kullanır — fikrini doğrulama modülünde tanımladığın müşteri, pazar analizinde rakip önerilerine, API tasarımında endpoint'lere kadar taşınır.",
+      "footnote": "Ve daha 6 modül: ürün gereksinimleri, MVP planı, proje iskeleti, sprint planı, AI araç yönetimi, prompt stüdyosu."
+    },
+    "maya": {
+      "kicker": "AI ASİSTANIN",
+      "heading": "Maya, seninle birlikte ilerler",
+      "body": "Maya her modülde seninle birlikte çalışan AI asistanın. Önceki modüllerde girdiğin bilgileri hatırlar, sıradaki adımı önerir ve senin için ilk taslağı hazırlar — sen sıfırdan başlamak yerine düzenleyip onaylarsın.",
+      "voiceover": "\"Merhaba, ben Maya. Nereden başlayacağını bilmiyor musun? O zaman tam doğru yerdesin. Sunduğum 12 modül, önce kendi ürününü sıfırdan inşa etmene yardımcı olacak ve doğru adımlarla gerçek ilerleme kaydetmen için sana rehberlik edecek. Sonra, Maya Studio'da ürününü birlikte büyüteceğiz. Bizi farklı kılan ne mi? Projelerin artık yarım kalmayacak — ne yaptığını tam olarak bilerek, her adımı eksiksiz bir güvenle takip edeceksin.\""
+    },
+    "studio": {
+      "kicker": "DEVPLAN CODE STUDIO",
+      "heading": "12 modülü bitirince, editörün seni bekliyor",
+      "body": "DevPlan Studio; planladığın API'leri, seçtiğin teknoloji yığınını ve tasarladığın akışları gerçek koda döken bir kodlama alanı. Maya burada da yanında — hangi dosyayı neden değiştirdiğini sana anlatır."
+    },
+    "testimonials": {
+      "heading": "Bizi seçenler ne diyor",
+      "items": {
+        "one": { "quote": "Fikrimi 3 haftadır kafamda döndürüyordum. DevPlan'la bir günde gerçek bir mimari ve API listesi çıktı.", "name": "Elif A.", "initials": "EA", "role": "Kurucu, erken aşama girişim" },
+        "two": { "quote": "Maya'nın önceki modülden bağlam taşıması gerçekten fark yaratıyor — her seferinde baştan anlatmak zorunda kalmıyorum.", "name": "Barış K.", "initials": "BK", "role": "Ürün yöneticisi" },
+        "three": { "quote": "Sprint planlama modülü sayesinde ekibime iş dağıtmak eskisi gibi yarım gün sürmüyor.", "name": "Selin Y.", "initials": "SY", "role": "Teknik ekip lideri" }
+      }
+    },
+    "contact": {
+      "heading": "Sorunuz mu var?",
+      "body": "Bir soru, öneri ya da sadece merhaba demek için bize yazın.",
+      "email": "destek@devplan.app"
+    },
+    "footer": {
+      "rights": "© 2026 DevPlan. Tüm hakları saklıdır."
+    }
+  }
+}
