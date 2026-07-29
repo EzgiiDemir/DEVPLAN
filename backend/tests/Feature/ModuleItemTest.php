@@ -55,9 +55,8 @@ class ModuleItemTest extends TestCase
 
         $created = $this->actingAs($user)->postJson("/api/modules/{$moduleId}/items", [
             'item_type' => 'lean_canvas',
-            'content' => [],
+            'content' => ['note' => 'test'],
         ]);
-        dump(['status' => $created->status(), 'body' => $created->json()]);
 
         $this->actingAs($user)->deleteJson("/api/items/{$created->json('id')}")->assertNoContent();
         $this->assertDatabaseMissing('module_items', ['id' => $created->json('id')]);
@@ -71,7 +70,7 @@ class ModuleItemTest extends TestCase
 
         $this->actingAs($owner)->postJson("/api/modules/{$moduleId}/items", [
             'item_type' => 'lean_canvas',
-            'content' => [],
+            'content' => ['note' => 'test'],
         ]);
 
         $this->actingAs($intruder)->getJson("/api/modules/{$moduleId}/items")->assertForbidden();
@@ -85,7 +84,7 @@ class ModuleItemTest extends TestCase
 
         $created = $this->actingAs($owner)->postJson("/api/modules/{$moduleId}/items", [
             'item_type' => 'lean_canvas',
-            'content' => [],
+            'content' => ['note' => 'test'],
         ]);
 
         $this->actingAs($intruder)

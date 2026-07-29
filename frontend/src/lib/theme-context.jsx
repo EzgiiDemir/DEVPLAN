@@ -5,23 +5,27 @@ import { createContext, useContext, useEffect, useState } from "react";
 const ThemeContext = createContext(null);
 const THEME_KEY = "devplan.theme";
 
-function resolveInitialTheme() {
-  if (typeof window === "undefined") return "light";
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  // No explicit choice yet — CSS follows the OS preference on its own; this
-  // just keeps the toggle icon in sync with what's actually showing.
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(resolveInitialTheme);
+  // Always starts as "light" so the very first client render matches what
+  // the server rendered — resolving localStorage/matchMedia here (even in a
+  // lazy useState initializer) runs during the client's first render too,
+  // before hydration, and produced a server/client mismatch whenever the
+  // real theme was "dark". The real value is resolved client-only, below.
+  const [theme, setThemeState] = useState("light");
 
   useEffect(() => {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "light" || stored === "dark") {
-      document.documentElement.setAttribute("data-theme", stored);
-    }
+    void Promise.resolve().then(() => {
+      const stored = localStorage.getItem(THEME_KEY);
+      if (stored === "light" || stored === "dark") {
+        setThemeState(stored);
+        document.documentElement.setAttribute("data-theme", stored);
+        return;
+      }
+      // No explicit choice yet — CSS follows the OS preference on its own;
+      // this just keeps the toggle icon in sync with what's actually showing.
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setThemeState(prefersDark ? "dark" : "light");
+    });
   }, []);
 
   function setTheme(next) {

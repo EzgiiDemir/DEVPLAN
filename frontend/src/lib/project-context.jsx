@@ -85,6 +85,21 @@ export function ProjectProvider({ children }) {
     }
   }
 
+  async function updateProject(projectId, data) {
+    try {
+      const updated = await apiFetch(`/projects/${projectId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+      setProject((p) => (p && p.id === projectId ? { ...p, ...updated } : p));
+      setProjects((list) => list.map((p) => (p.id === projectId ? { ...p, ...updated } : p)));
+      return updated;
+    } catch (err) {
+      if (err.status === 401) clearSession();
+      throw err;
+    }
+  }
+
   async function updateModuleStatus(moduleId, status) {
     try {
       const updated = await apiFetch(`/modules/${moduleId}`, {
@@ -110,6 +125,7 @@ export function ProjectProvider({ children }) {
         loading,
         createProject,
         switchProject,
+        updateProject,
         updateModuleStatus,
         refresh: loadProjects,
       }}

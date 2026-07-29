@@ -8,10 +8,10 @@ export function MayaAvatar({
 }) {
   // Boyut seçenekleri (Avatarın kullanım alanına göre kolayca ölçeklenmesi için)
   const sizeClasses = {
-    small: "w-16 h-16",
-    medium: "w-32 h-32",
-    large: "w-64 h-64",
-    full: "w-full h-auto",
+      small: "w-20 h-20",   
+  medium: "w-40 h-40",  
+  large: "w-72 h-72",    
+  full: "w-full h-auto",
   };
 
   const selectedSize = sizeClasses[size] || sizeClasses.medium;

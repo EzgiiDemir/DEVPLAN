@@ -1,0 +1,17 @@
+{
+  "name": "devplan-companion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DevPlan Companion — local agent that lets DevPlan Studio check your installed tools, create real project folders, and run real terminal commands on your machine.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0"
+  }
+}

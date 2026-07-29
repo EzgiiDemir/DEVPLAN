@@ -82,4 +82,42 @@ class ProjectTest extends TestCase
 
         $this->assertDatabaseMissing('projects', ['id' => $created->json('id')]);
     }
+
+    public function test_workspace_state_persists_and_round_trips(): void
+    {
+        $user = User::factory()->create();
+        $created = $this->actingAs($user)->postJson('/api/projects', ['title' => 'IDE Test']);
+        $projectId = $created->json('id');
+
+        $state = [
+            'openTabs' => ['src/index.js', 'src/App.jsx'],
+            'activeTab' => 'src/App.jsx',
+            'cursorPositions' => ['src/App.jsx' => ['line' => 12, 'column' => 4]],
+            'lastActiveFile' => 'src/App.jsx',
+        ];
+
+        $response = $this->actingAs($user)->patchJson("/api/projects/{$projectId}/workspace-state", [
+            'workspace_state' => $state,
+        ]);
+
+        $response->assertOk()->assertJsonPath('workspace_state.activeTab', 'src/App.jsx');
+
+        $refetched = $this->actingAs($user)->getJson("/api/projects/{$projectId}");
+        $this->assertSame($state['openTabs'], $refetched->json('workspace_state.openTabs'));
+        // Accessed without dot-notation — the key itself ("src/App.jsx")
+        // contains a literal dot, which Laravel's json() path helper would
+        // otherwise misinterpret as nesting.
+        $this->assertSame(12, $refetched->json('workspace_state.cursorPositions')['src/App.jsx']['line']);
+    }
+
+    public function test_workspace_state_requires_ownership(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $created = $this->actingAs($owner)->postJson('/api/projects', ['title' => 'Private']);
+
+        $this->actingAs($intruder)
+            ->patchJson("/api/projects/{$created->json('id')}/workspace-state", ['workspace_state' => ['activeTab' => 'x']])
+            ->assertForbidden();
+    }
 }

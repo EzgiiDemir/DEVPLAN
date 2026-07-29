@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DevPlan Companion</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+        background: #1b3c53;
+        color: #e8eef2;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      header {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid #456882;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #ff6b00;
+      }
+      .status {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #91a6b5;
+      }
+      main {
+        padding: 24px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .code-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #91a6b5;
+        margin-bottom: 8px;
+      }
+      .code {
+        font-family: "SF Mono", "JetBrains Mono", monospace;
+        font-size: 40px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        background: #234c6a;
+        border: 1px solid #456882;
+        border-radius: 16px;
+        padding: 20px 24px;
+        text-align: center;
+      }
+      .hint {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #91a6b5;
+        line-height: 1.6;
+      }
+      button {
+        margin-top: 14px;
+        background: transparent;
+        border: 1px solid #456882;
+        color: #e8eef2;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: #ff6b00;
+        color: #ff8a3d;
+      }
+      .log-label {
+        margin-top: 28px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #91a6b5;
+        margin-bottom: 8px;
+      }
+      #log {
+        font-family: "SF Mono", "JetBrains Mono", monospace;
+        font-size: 11px;
+        line-height: 1.7;
+        color: #b7c6d0;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand"><span class="dot"></span>DevPlan Companion</div>
+      <div class="status" id="status">Starting local agent…</div>
+    </header>
+    <main>
+      <div class="code-label">Pairing code</div>
+      <div class="code" id="code">------</div>
+      <div class="hint">
+        Open DevPlan Studio in your browser, go to Setup Mode, and enter this code to link this
+        computer. Only enter this code into DevPlan itself.
+      </div>
+      <button id="regenerate">Generate a new code</button>
+
+      <div class="log-label">Activity</div>
+      <div id="log"></div>
+    </main>
+    <script>
+      const codeEl = document.getElementById("code");
+      const statusEl = document.getElementById("status");
+      const logEl = document.getElementById("log");
+
+      window.companion.onState((state) => {
+        codeEl.textContent = state.pairingCode.replace(/(\d{3})(\d{3})/, "$1 $2");
+        statusEl.textContent = `Running on port ${state.port} — ${state.pairedSessions} browser session(s) linked`;
+      });
+
+      window.companion.onLog((line) => {
+        logEl.textContent = `${new Date().toLocaleTimeString()}  ${line}\n` + logEl.textContent;
+      });
+
+      document.getElementById("regenerate").addEventListener("click", () => {
+        window.companion.regenerateCode();
+      });
+    </script>
+  </body>
+</html>

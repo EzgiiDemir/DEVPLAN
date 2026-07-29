@@ -549,6 +549,41 @@ class AiController extends Controller
         ],
     ];
 
+    private const PACKAGE_LIST_PROMPTS = [
+        'tr' => [
+            'system' => 'Sen bir yazılım mimarısın. Seçilen teknoloji yığını ve özellik listesine göre gerçekten var olan, yaygın kullanılan npm/composer paketlerini öneriyorsun — uydurma paket adı vermiyorsun. Yalnızca geçerli JSON döndürüyorsun, başka hiçbir metin eklemiyorsun.',
+            'prompt' => <<<'PROMPT'
+                Teknoloji yığını:
+                - Frontend: %s
+                - Backend: %s
+
+                MVP kapsamındaki özellikler: %s
+
+                Bu proje için gerekli olacak, gerçekten var olan npm (frontend) ve varsa composer (backend) paketlerini listele.
+                Her paket için tek cümlelik kısa bir gerekçe yaz.
+
+                Sadece şu formatta JSON döndür:
+                {"packages": [{"name": "paket-adi", "manager": "npm|composer", "reason": "kısa gerekçe"}, ...]}
+                PROMPT,
+        ],
+        'en' => [
+            'system' => 'You are a software architect recommending real, commonly used npm/composer packages based on the chosen tech stack and feature list — never invented package names. You only return valid JSON, no other text.',
+            'prompt' => <<<'PROMPT'
+                Tech stack:
+                - Frontend: %s
+                - Backend: %s
+
+                Features in MVP scope: %s
+
+                List the real npm (frontend) and, if applicable, composer (backend) packages this project will need.
+                Give a one-sentence reason for each.
+
+                Return only JSON in this format:
+                {"packages": [{"name": "package-name", "manager": "npm|composer", "reason": "short reason"}, ...]}
+                PROMPT,
+        ],
+    ];
+
     public function __construct(private AiTextGenerator $ai) {}
 
     public function pitch(Request $request)
@@ -1073,6 +1108,40 @@ class AiController extends Controller
         }
 
         return response()->json(['tools' => $parsed['tools']]);
+    }
+
+    public function packageList(Request $request)
+    {
+        $data = $request->validate([
+            'module_id' => ['required', 'integer'],
+            'frontend' => ['required', 'string', 'max:100'],
+            'backend' => ['required', 'string', 'max:100'],
+            'locale' => ['required', 'in:tr,en'],
+        ]);
+
+        $module = $this->authorizedModule($request, $data['module_id']);
+        $prompts = self::PACKAGE_LIST_PROMPTS[$data['locale']];
+        $features = $this->mvpFeaturesBlock($module->project_id, [
+            'featuresHeader' => '%s',
+            'noFeatures' => '-',
+        ], ['must', 'should']);
+
+        try {
+            $raw = $this->ai->generate(
+                systemPrompt: $prompts['system'],
+                userPrompt: sprintf($prompts['prompt'], $data['frontend'], $data['backend'], $features),
+                maxTokens: 900,
+            );
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        $parsed = $this->parseJson($raw);
+        if (! $parsed || ! isset($parsed['packages'])) {
+            return response()->json(['message' => trans('messages.ai_response_unparseable')], 502);
+        }
+
+        return response()->json(['packages' => $parsed['packages']]);
     }
 
     private function authorizedModule(Request $request, int $moduleId): Module
