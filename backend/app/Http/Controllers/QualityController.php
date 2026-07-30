@@ -12,14 +12,14 @@ class QualityController extends Controller
 
     public function show(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         return $this->quality->currentSnapshot($project);
     }
 
     public function detect(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         $data = $request->validate([
             'has_package_json' => ['sometimes', 'boolean'],
@@ -36,7 +36,7 @@ class QualityController extends Controller
 
     public function scan(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'npm_audit_json' => ['sometimes', 'nullable', 'string'],
@@ -50,10 +50,5 @@ class QualityController extends Controller
             $data['composer_audit_json'] ?? null,
             $data['eslint_json'] ?? null,
         );
-    }
-
-    private function authorizeProject(Request $request, Project $project): void
-    {
-        abort_unless($project->user_id === $request->user()->id, 403);
     }
 }

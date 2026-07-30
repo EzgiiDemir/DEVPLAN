@@ -19,6 +19,25 @@ class MayaControllerTest extends TestCase
         return Project::findOrFail($response->json('id'));
     }
 
+    /**
+     * Maya's endpoint now returns 202 + a job id instead of the created
+     * messages directly (Subsystem 3 — Queue System). Under the `sync`
+     * queue driver used in tests, dispatch() runs the job inline before
+     * this returns, so polling GET /ai-jobs/{id} immediately after already
+     * sees the final 'succeeded' state — this helper mirrors exactly what
+     * the real frontend polling loop does, just without needing to wait.
+     */
+    private function sendMayaMessageAndGetResult(User $user, Project $project, array $body): array
+    {
+        $store = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", $body);
+        $store->assertStatus(202);
+
+        $job = $this->actingAs($user)->getJson("/api/ai-jobs/{$store->json('job_id')}");
+        $job->assertOk()->assertJsonPath('status', 'succeeded');
+
+        return $job->json('result');
+    }
+
     public function test_chat_intent_produces_a_conversational_reply_with_no_change_set(): void
     {
         $this->mock(AiTextGenerator::class, function ($mock) {
@@ -29,16 +48,16 @@ class MayaControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
-            'message' => 'Hey, what can you help me with?',
-        ]);
+        $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'Hey, what can you help me with?']);
 
-        $response->assertCreated()->assertJsonPath('change_set', null);
-        $messages = $response->json('messages');
+        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $history->assertOk();
+        $messages = $history->json();
         $this->assertSame('user', $messages[0]['role']);
         $this->assertSame('chat', $messages[0]['intent']);
         $this->assertSame('assistant', $messages[1]['role']);
         $this->assertSame('Hi! I am Maya, ask me anything about this project.', $messages[1]['content']);
+        $this->assertNull($messages[1]['feature_request']);
 
         $this->assertDatabaseCount('maya_messages', 2);
         $this->assertDatabaseHas('maya_messages', ['project_id' => $project->id, 'role' => 'user', 'intent' => 'chat']);
@@ -76,10 +95,10 @@ class MayaControllerTest extends TestCase
 
         // The message keyword-matches LoginForm only; without the active_file
         // hint, UnrelatedNameEntirely would never appear in context.
-        $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
+        $this->sendMayaMessageAndGetResult($user, $project, [
             'message' => 'Explain the login flow',
             'active_file' => 'src/components/UnrelatedNameEntirely.jsx',
-        ])->assertCreated();
+        ]);
 
         $this->assertStringContainsString('LoginForm.jsx', $capturedUserPrompt);
         $this->assertStringContainsString('UnrelatedNameEntirely.jsx', $capturedUserPrompt);
@@ -109,11 +128,8 @@ class MayaControllerTest extends TestCase
             'summary' => 'Handles login and registration.',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
-            'message' => 'Explain the authentication system',
-        ]);
+        $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'Explain the authentication system']);
 
-        $response->assertCreated()->assertJsonPath('change_set', null);
         $this->assertStringContainsString('AuthController.php', $capturedUserPrompt);
         $this->assertDatabaseHas('maya_messages', ['project_id' => $project->id, 'role' => 'assistant', 'intent' => 'explain']);
     }
@@ -142,11 +158,10 @@ class MayaControllerTest extends TestCase
             'summary' => 'Creates the users table.',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
+        $this->sendMayaMessageAndGetResult($user, $project, [
             'message' => 'Login is broken: TypeError cannot read id of undefined',
         ]);
 
-        $response->assertCreated()->assertJsonPath('change_set', null);
         $this->assertStringContainsString('Recent activity', $capturedUserPrompt);
         $this->assertStringContainsString('Database schema', $capturedUserPrompt);
         $this->assertStringContainsString('users table', $capturedUserPrompt);
@@ -165,31 +180,20 @@ class MayaControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
+        $this->sendMayaMessageAndGetResult($user, $project, [
             'message' => 'Add a wishlist feature so users can save products.',
         ]);
-
-        $response->assertCreated();
-        $this->assertNotNull($response->json('change_set'));
-        $this->assertCount(1, $response->json('change_set.files'));
-
-        $assistantMessage = collect($response->json('messages'))->firstWhere('role', 'assistant');
-        $this->assertSame('feature_request', $assistantMessage['intent']);
-        $this->assertNotNull($assistantMessage['feature_request_id']);
 
         $this->assertDatabaseHas('feature_requests', ['project_id' => $project->id, 'prompt' => 'Add a wishlist feature so users can save products.']);
         $this->assertDatabaseHas('change_set_files', ['path' => 'app/Models/Wishlist.php']);
 
         // The assistant message itself must carry the hydrated plan inline —
-        // this is what lets a FeatureCard render without a second round-trip,
-        // both right after sending and after a page reload via index().
-        $this->assertSame(
-            'app/Models/Wishlist.php',
-            $assistantMessage['feature_request']['change_set']['files'][0]['path'],
-        );
-
+        // this is what lets a FeatureCard render without a second round-trip
+        // after a page reload via index().
         $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
         $historyAssistant = collect($history->json())->firstWhere('role', 'assistant');
+        $this->assertSame('feature_request', $historyAssistant['intent']);
+        $this->assertNotNull($historyAssistant['feature_request_id']);
         $this->assertSame(
             'app/Models/Wishlist.php',
             $historyAssistant['feature_request']['change_set']['files'][0]['path'],
@@ -208,14 +212,12 @@ class MayaControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", [
-            'message' => 'Can you clean up the Widget component?',
-        ]);
+        $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'Can you clean up the Widget component?']);
 
-        $response->assertCreated();
-        $assistantMessage = collect($response->json('messages'))->firstWhere('role', 'assistant');
+        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $assistantMessage = collect($history->json())->firstWhere('role', 'assistant');
         $this->assertSame('refactor', $assistantMessage['intent']);
-        $this->assertNotNull($response->json('change_set'));
+        $this->assertNotNull($assistantMessage['feature_request_id']);
     }
 
     public function test_index_returns_history_in_chronological_order(): void
@@ -231,8 +233,8 @@ class MayaControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", ['message' => 'first']);
-        $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", ['message' => 'second']);
+        $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'first']);
+        $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'second']);
 
         $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
         $history->assertOk();

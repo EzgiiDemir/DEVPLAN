@@ -1,36 +1,35 @@
-const { exec } = require("child_process");
+const crossSpawn = require("cross-spawn");
 const fs = require("fs");
+const { validateCommand } = require("./commandPolicy");
 
-// Only these command prefixes may run. This is the single most important
-// safety boundary in the whole companion — without it, a compromised or
-// malicious paired browser session could run anything on the user's machine.
-const ALLOWED_PREFIXES = [
-  "npm ", "npx ", "pnpm ", "yarn ",
-  "git ",
-  "composer ",
-  "pip ", "pip3 ", "python ", "python3 ",
-  "php ",
-  "dotnet ",
-  "go ",
-  "cargo ",
-  "flutter ",
-  "docker ",
-  // Deployment CLIs (Phase 9) — each already requires the user to have
-  // authenticated locally (vercel login / railway login / amplify configure)
-  // entirely outside DevPlan; this list only gates *which tool* can run, not
-  // what it's allowed to do with the user's own already-established auth.
-  "vercel ", "railway ", "amplify ",
-];
+const TIMEOUT_MS = 120000;
+const MAX_OUTPUT_BYTES = 5 * 1024 * 1024;
 
+// Kept for backward compatibility — processes.js and any external caller
+// still import { isAllowed } expecting a boolean given the raw command
+// string. Internally it's now backed by the same real parser/schema
+// validateCommand() uses, not a prefix check.
 function isAllowed(command) {
-  const trimmed = String(command || "").trim();
-  return ALLOWED_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+  return validateCommand(command).ok;
 }
 
+/**
+ * Runs one command to completion and resolves with its result. No shell is
+ * ever invoked: the command string is parsed into argv and validated against
+ * an explicit per-binary schema (see commandPolicy.js) before
+ * cross-spawn.sync launches the real binary directly with that argv array.
+ * cross-spawn (not plain child_process.execFile/spawn) is required
+ * specifically for Windows, where npm/npx/yarn/pnpm are `.cmd` shims the OS
+ * can only launch through cmd.exe — cross-spawn does that safely, with each
+ * argument escaped as a literal value, which is a fundamentally different
+ * (and safe) thing from handing the whole original string to a shell for
+ * interpretation the way the previous exec()-based implementation did.
+ */
 function runCommand({ command, cwd }) {
   return new Promise((resolve, reject) => {
-    if (!isAllowed(command)) {
-      reject(new Error(`Command not allowed: "${command}". Only npm/pnpm/yarn/git/composer/pip/python/php/dotnet/go/cargo/flutter/docker commands can run here.`));
+    const validated = validateCommand(command);
+    if (!validated.ok) {
+      reject(new Error(validated.reason));
       return;
     }
     if (!cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
@@ -38,12 +37,34 @@ function runCommand({ command, cwd }) {
       return;
     }
 
-    exec(command, { cwd, timeout: 120000, windowsHide: true, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const child = crossSpawn(validated.binary, validated.args, {
+      cwd,
+      windowsHide: true,
+      timeout: TIMEOUT_MS,
+    });
+
+    let output = "";
+    let truncated = false;
+    const append = (chunk) => {
+      if (truncated) return;
+      output += chunk.toString();
+      if (output.length > MAX_OUTPUT_BYTES) {
+        output = output.slice(0, MAX_OUTPUT_BYTES) + "\n[output truncated]";
+        truncated = true;
+      }
+    };
+    child.stdout?.on("data", append);
+    child.stderr?.on("data", append);
+
+    child.on("error", (err) => {
+      resolve({ command, exitCode: 1, output: `${output}\n[${err.message}]`.trim(), timedOut: false });
+    });
+    child.on("close", (code, signal) => {
       resolve({
         command,
-        exitCode: error ? (error.code ?? 1) : 0,
-        output: `${stdout}\n${stderr}`.trim(),
-        timedOut: error?.killed && error?.signal === "SIGTERM",
+        exitCode: code ?? 1,
+        output: output.trim(),
+        timedOut: signal === "SIGTERM",
       });
     });
   });

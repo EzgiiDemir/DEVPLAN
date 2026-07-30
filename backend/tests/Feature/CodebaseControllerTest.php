@@ -151,6 +151,49 @@ class CodebaseControllerTest extends TestCase
         $this->assertSame(['./missing'], $file['unresolved_imports']);
     }
 
+    /**
+     * Covers Subsystem 8 (Project Brain Freshness) end to end: a diff()
+     * call reporting the current git HEAD persists it on the project, and
+     * status() compares that stored value against whatever HEAD it's given
+     * next, flagging a mismatch as stale.
+     */
+    public function test_diff_records_the_reported_git_head(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $this->actingAs($user)->postJson("/api/projects/{$project->id}/codebase/diff", [
+            'files' => [['path' => 'src/existing.js', 'hash' => 'abc']],
+            'git_head' => 'abc123',
+        ])->assertOk();
+
+        $this->assertSame('abc123', $project->fresh()->last_known_git_head);
+    }
+
+    public function test_status_reports_stale_when_current_head_differs_from_the_stored_one(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+        $project->update(['last_known_git_head' => 'abc123']);
+
+        $fresh = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status?current_head=abc123");
+        $fresh->assertOk()->assertJsonPath('stale', false);
+
+        $stale = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status?current_head=def456");
+        $stale->assertOk()->assertJsonPath('stale', true);
+    }
+
+    public function test_status_is_not_stale_when_no_current_head_is_reported(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+        $project->update(['last_known_git_head' => 'abc123']);
+
+        $response = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status");
+
+        $response->assertOk()->assertJsonPath('stale', false)->assertJsonPath('last_known_git_head', 'abc123');
+    }
+
     public function test_status_and_files_endpoints_require_project_ownership(): void
     {
         $owner = User::factory()->create();

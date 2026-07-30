@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Module;
 use App\Models\Project;
+use App\Models\Team;
+use App\Policies\ProjectPolicy;
+use App\Services\AuditLogService;
+use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,9 +18,18 @@ class ProjectController extends Controller
         'ai_resources', 'prompt_engineering',
     ];
 
+    public function __construct(
+        private TeamService $teams,
+        private ProjectPolicy $policy,
+        private AuditLogService $audit,
+    ) {}
+
     public function index(Request $request)
     {
-        return $request->user()->projects()->latest()->get();
+        $teamIds = $request->user()->teams()->pluck('teams.id');
+
+        return Project::whereIn('team_id', $teamIds)->with('team')->latest()->get()
+            ->map(fn (Project $project) => $this->withRole($request, $project));
     }
 
     public function store(Request $request)
@@ -25,10 +37,23 @@ class ProjectController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'team_id' => ['sometimes', 'nullable', 'integer', 'exists:teams,id'],
         ]);
 
-        $project = DB::transaction(function () use ($request, $data) {
-            $project = $request->user()->projects()->create($data);
+        if (! empty($data['team_id'])) {
+            $team = Team::findOrFail($data['team_id']);
+            $role = $team->members()->where('user_id', $request->user()->id)->value('role');
+            abort_unless(in_array($role, ['developer', 'admin', 'owner'], true), 403);
+        } else {
+            $team = $this->teams->ensurePersonalTeam($request->user());
+        }
+
+        $project = DB::transaction(function () use ($request, $data, $team) {
+            $project = $request->user()->projects()->create([
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'team_id' => $team->id,
+            ]);
 
             foreach (self::MODULE_TYPES as $index => $moduleType) {
                 $project->modules()->create([
@@ -46,14 +71,14 @@ class ProjectController extends Controller
 
     public function show(Request $request, Project $project)
     {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        $this->authorize('view', $project);
 
-        return $project->load('modules.items');
+        return $this->withRole($request, $project->load('modules.items'));
     }
 
     public function update(Request $request, Project $project)
     {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
@@ -73,7 +98,7 @@ class ProjectController extends Controller
      */
     public function updateWorkspaceState(Request $request, Project $project)
     {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'workspace_state' => ['required', 'array'],
@@ -91,10 +116,24 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, Project $project)
     {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        $this->authorize('delete', $project);
+
+        $this->audit->record($request->user(), 'project.deleted', ['title' => $project->title], project: $project);
 
         $project->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Attaches the requesting user's effective role as a plain "my_role"
+     * attribute so the frontend can gate/disable actions without a second
+     * round-trip or re-implementing ProjectPolicy's role resolution itself.
+     */
+    private function withRole(Request $request, Project $project): Project
+    {
+        $project->setAttribute('my_role', $this->policy->roleFor($request->user(), $project));
+
+        return $project;
     }
 }

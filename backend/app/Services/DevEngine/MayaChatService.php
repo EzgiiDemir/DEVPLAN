@@ -174,11 +174,13 @@ class MayaChatService
             default => [
                 'You are Maya, an AI software engineer embedded in this project. Answer the user\'s question helpfully '
                 .'and concisely, grounded only in the real project context given below — never invent files or behavior '
-                .'that aren\'t there.',
+                .'that aren\'t there. Recent activity entries show who asked for what; use that attribution when it\'s '
+                .'relevant to the question (e.g. "what is X working on", "what\'s the sprint status").',
                 sprintf(
-                    "Related files:\n%s\n\nRecent activity:\n%s",
+                    "Related files:\n%s\n\nRecent activity:\n%s\n\nTask/sprint status:\n%s",
                     $filesBlock,
                     $this->contextEngine->recentActivity($project),
+                    $this->contextEngine->sprintStatus($project),
                 ),
             ],
         };

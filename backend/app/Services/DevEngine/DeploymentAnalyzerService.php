@@ -5,6 +5,7 @@ namespace App\Services\DevEngine;
 use App\Models\Module;
 use App\Models\ModuleItem;
 use App\Models\Project;
+use App\Models\ProjectFile;
 use App\Services\AiTextGenerator;
 
 /**
@@ -39,15 +40,21 @@ class DeploymentAnalyzerService
         $envExample = $this->envExampleTemplate($project);
         $requiredEnvVars = $this->parseEnvVarNames($envExample);
 
+        $migrationCount = $this->indexedMigrationCount($project);
+
         $warnings = [];
         if ($envExample === null) {
             $warnings[] = 'No .env.example found — complete the Environment module first for an accurate required-variables list.';
+        }
+        if ($migrationCount > 0) {
+            $warnings[] = "This project has {$migrationCount} database migration(s) indexed — make sure your deployment pipeline runs them (e.g. `php artisan migrate --force` for Laravel, or the equivalent for this stack) before or during deploy.";
         }
 
         $result = [
             'platform_ready' => empty($missingConfigFiles),
             'missing_config_files' => $missingConfigFiles,
             'required_env_vars' => $requiredEnvVars,
+            'migration_count' => $migrationCount,
             'warnings' => $warnings,
         ];
 
@@ -95,6 +102,22 @@ class DeploymentAnalyzerService
         preg_match_all('/^([A-Z_][A-Z0-9_]*)\s*=/m', $envExample, $matches);
 
         return array_values(array_unique($matches[1]));
+    }
+
+    /**
+     * The backend has no access to the user's actual runtime database (this
+     * analyzes their project, which runs entirely on their own machine) —
+     * it can't verify whether migrations have actually been run against
+     * whatever the deploy target's database will be. What it *can* say
+     * deterministically is whether the project has migrations at all, which
+     * is exactly the fact that makes "did you forget to run them" worth
+     * asking before every deploy.
+     */
+    private function indexedMigrationCount(Project $project): int
+    {
+        return ProjectFile::where('project_id', $project->id)
+            ->where('path', 'like', '%/migrations/%')
+            ->count();
     }
 
     private function generateSummary(string $platform, array $facts): string

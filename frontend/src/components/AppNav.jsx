@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Info, Mail, LayoutGrid, Sparkles, TerminalSquare, Settings, Menu, X } from "lucide-react";
+import { Info, Mail, LayoutGrid, Sparkles, TerminalSquare, Users, Settings, ShieldCheck, Menu, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/dashboard", key: "modules", Icon: LayoutGrid },
   { href: "/maya", key: "maya", Icon: Sparkles },
   { href: "/studio", key: "studio", Icon: TerminalSquare },
+  { href: "/teams", key: "teams", Icon: Users },
   { href: "/about", key: "about", Icon: Info },
   { href: "/contact", key: "contact", Icon: Mail },
 ];
@@ -48,6 +49,15 @@ export function AppNav() {
 
         <div className="hidden lg:flex items-center gap-1">
           <Link
+            href="/security"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+              pathname.startsWith("/security") ? "bg-dp-faint text-dp-ink" : "text-dp-muted hover:text-dp-ink hover:bg-dp-faint"
+            }`}
+            aria-label={t("security")}
+          >
+            <ShieldCheck size={16} strokeWidth={1.8} />
+          </Link>
+          <Link
             href="/settings"
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
               pathname === "/settings" ? "bg-dp-faint text-dp-ink" : "text-dp-muted hover:text-dp-ink hover:bg-dp-faint"
@@ -84,6 +94,16 @@ export function AppNav() {
               {t(key)}
             </Link>
           ))}
+          <Link
+            href="/security"
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              pathname.startsWith("/security") ? "bg-dp-faint text-dp-ink" : "text-dp-muted hover:text-dp-ink hover:bg-dp-faint"
+            }`}
+          >
+            <ShieldCheck size={16} strokeWidth={1.8} />
+            {t("security")}
+          </Link>
           <Link
             href="/settings"
             onClick={() => setOpen(false)}

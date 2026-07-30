@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { File as FileIcon, Send } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { pollAiJob } from "@/lib/aiJobs";
 import { MayaAvatar } from "@/components/MayaAvatar";
 import { FeatureCard } from "./FeatureCard";
 
 const FEATURE_INTENTS = new Set(["refactor", "feature_request", "test", "fix"]);
 
-export function MayaChatPanel({ projectId, localPath, activeFile, onApplied }) {
+export function MayaChatPanel({ projectId, localPath, activeFile, onApplied, canAct = true }) {
   const t = useTranslations("MayaChat");
 
   const [messages, setMessages] = useState([]);
@@ -47,15 +48,26 @@ export function MayaChatPanel({ projectId, localPath, activeFile, onApplied }) {
     const text = input;
     setInput("");
 
+    // handleMessage() now runs in a background job (Subsystem 3 — Queue
+    // System) instead of blocking this request, so the user's own message
+    // wouldn't otherwise appear until the whole round trip finishes —
+    // render it optimistically now, then reconcile with the real history
+    // (which replaces this temporary bubble) once the job resolves.
+    const tempId = `pending-${Date.now()}`;
+    setMessages((prev) => [...prev, { id: tempId, role: "user", content: text, intent: null }]);
+
     try {
-      const result = await apiFetch(`/projects/${projectId}/maya/messages`, {
+      const dispatched = await apiFetch(`/projects/${projectId}/maya/messages`, {
         method: "POST",
         body: JSON.stringify({ message: text, active_file: activeFile || undefined }),
       });
-      setMessages((prev) => [...prev, ...result.messages]);
+      await pollAiJob(dispatched.job_id);
+      const history = await apiFetch(`/projects/${projectId}/maya/messages`);
+      setMessages(history);
     } catch (err) {
       setError(err.message);
       setInput(text);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setSending(false);
     }
@@ -101,6 +113,7 @@ export function MayaChatPanel({ projectId, localPath, activeFile, onApplied }) {
                   projectId={projectId}
                   localPath={localPath}
                   onApplied={onApplied}
+                  canAct={canAct}
                 />
               )}
             </div>
@@ -112,15 +125,15 @@ export function MayaChatPanel({ projectId, localPath, activeFile, onApplied }) {
       </div>
 
       <form onSubmit={sendMessage} className="p-3 border-t border-dp-editor-border">
-        <div className={`flex items-center gap-2 bg-dp-editor-overlay rounded-full px-3.5 py-2.5 ${sending ? "opacity-60" : ""}`}>
+        <div className={`flex items-center gap-2 bg-dp-editor-overlay rounded-full px-3.5 py-2.5 ${sending || !canAct ? "opacity-60" : ""}`}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={sending}
-            placeholder={t("inputPlaceholder")}
+            disabled={sending || !canAct}
+            placeholder={canAct ? t("inputPlaceholder") : t("viewOnlyPlaceholder")}
             className="flex-1 bg-transparent text-xs text-dp-editor-text placeholder:text-dp-editor-muted outline-none disabled:cursor-not-allowed"
           />
-          <button type="submit" disabled={sending || !input.trim()} className="disabled:opacity-40">
+          <button type="submit" disabled={sending || !canAct || !input.trim()} className="disabled:opacity-40">
             <Send size={14} className="text-dp-editor-muted" />
           </button>
         </div>

@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Brain, RotateCw } from "lucide-react";
+import { Brain, RotateCw, TriangleAlert } from "lucide-react";
 import { useCompanion } from "@/lib/companion-context";
 import { apiFetch } from "@/lib/api";
 
 const INDEX_BATCH_SIZE = 20;
 
-export function ProjectBrainPanel({ projectId }) {
+// Best-effort — no local git repo yet, or Companion not paired, just means
+// the staleness check is skipped rather than the whole panel failing.
+async function currentGitHead(companion, localPath) {
+  if (!companion.paired || !localPath) return null;
+  try {
+    const result = await companion.runCommand("git rev-parse HEAD", localPath);
+    return result.exitCode === 0 ? result.output.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export function ProjectBrainPanel({ projectId, localPath }) {
   const t = useTranslations("StudioProjectBrain");
   const companion = useCompanion();
 
@@ -17,10 +29,17 @@ export function ProjectBrainPanel({ projectId }) {
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
 
+  const loadStatus = useCallback(async () => {
+    const head = await currentGitHead(companion, localPath);
+    const query = head ? `?current_head=${encodeURIComponent(head)}` : "";
+    return apiFetch(`/projects/${projectId}/codebase/status${query}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, localPath]);
+
   useEffect(() => {
     if (!projectId) return;
     let cancelled = false;
-    apiFetch(`/projects/${projectId}/codebase/status`)
+    loadStatus()
       .then((data) => {
         if (!cancelled) setStatus(data);
       })
@@ -28,7 +47,7 @@ export function ProjectBrainPanel({ projectId }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, loadStatus]);
 
   async function runScan() {
     setScanning(true);
@@ -38,10 +57,12 @@ export function ProjectBrainPanel({ projectId }) {
     try {
       const listing = await companion.listFiles();
       const hashByPath = new Map(listing.files.map((f) => [f.path, f.hash]));
+      const gitHead = await currentGitHead(companion, localPath);
       const diffResult = await apiFetch(`/projects/${projectId}/codebase/diff`, {
         method: "POST",
         body: JSON.stringify({
           files: listing.files.map((f) => ({ path: f.path, hash: f.hash })),
+          git_head: gitHead,
         }),
       });
 
@@ -71,8 +92,7 @@ export function ProjectBrainPanel({ projectId }) {
         setProgress({ done: Math.min(i + INDEX_BATCH_SIZE, needsContent.length), total: needsContent.length });
       }
 
-      const freshStatus = await apiFetch(`/projects/${projectId}/codebase/status`);
-      setStatus(freshStatus);
+      setStatus(await loadStatus());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,6 +133,12 @@ export function ProjectBrainPanel({ projectId }) {
         <div className="text-[11px] text-dp-editor-muted space-y-0.5">
           <p>{t("fileCount", { count: status.file_count })}</p>
           <p>{t("dependencyCount", { count: status.dependency_count })}</p>
+          {status.stale && (
+            <p className="flex items-center gap-1 text-amber-500">
+              <TriangleAlert size={10} className="flex-shrink-0" />
+              {t("stale")}
+            </p>
+          )}
         </div>
       ) : (
         <p className="text-[11px] text-dp-editor-muted italic">{t("neverScanned")}</p>

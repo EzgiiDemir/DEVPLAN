@@ -5,6 +5,16 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, RotateCw, ShieldAlert, Sparkles, XCircle } from "lucide-react";
 import { useCompanion } from "@/lib/companion-context";
 import { apiFetch } from "@/lib/api";
+import { classifyCommand } from "@/lib/riskClassification";
+
+function relayCommandExecution(projectId, command, exitCode) {
+  apiFetch(`/projects/${projectId}/audit/commands`, {
+    method: "POST",
+    body: JSON.stringify({ type: "command", command, risk_level: classifyCommand(command), exit_code: exitCode }),
+  }).catch(() => {
+    // Best-effort — the command already ran either way.
+  });
+}
 
 const PYTEST_CONFIG_NAMES = ["pytest.ini", "pyproject.toml", "setup.cfg"];
 const ESLINT_CONFIG_NAMES = [".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs", "eslint.config.js", "eslint.config.mjs"];
@@ -24,7 +34,7 @@ async function existsAny(companion, names) {
   return false;
 }
 
-export function TestingPanel({ projectId, localPath }) {
+export function TestingPanel({ projectId, localPath, canAct = true }) {
   const t = useTranslations("StudioTesting");
   const companion = useCompanion();
 
@@ -85,7 +95,7 @@ export function TestingPanel({ projectId, localPath }) {
   }, [projectId, companion.paired]);
 
   async function runTests() {
-    if (!detected?.framework || running) return;
+    if (!detected?.framework || running || !canAct) return;
     setRunning(true);
     setError(null);
     setFixRequested(new Set());
@@ -103,6 +113,7 @@ export function TestingPanel({ projectId, localPath }) {
       }
 
       const execResult = await companion.runCommand(detected.runCommand, localPath);
+      relayCommandExecution(projectId, detected.runCommand, execResult.exitCode);
       const resultFileContent = await readIfExists(companion, detected.resultFilePath);
       const coverageFileContent = detected.coverageFilePath
         ? await readIfExists(companion, detected.coverageFilePath)
@@ -126,6 +137,7 @@ export function TestingPanel({ projectId, localPath }) {
   }
 
   async function suggestFix(index) {
+    if (!canAct) return;
     setSuggestingFixIndex(index);
     setError(null);
     try {
@@ -142,6 +154,7 @@ export function TestingPanel({ projectId, localPath }) {
   }
 
   async function rescanQuality() {
+    if (!canAct) return;
     setScanningQuality(true);
     setError(null);
     try {
@@ -161,6 +174,7 @@ export function TestingPanel({ projectId, localPath }) {
       const outputs = {};
       for (const [key, command] of Object.entries(detectResult.commands)) {
         const result = await companion.runCommand(command, localPath);
+        relayCommandExecution(projectId, command, result.exitCode);
         outputs[key] = result.output;
       }
 
@@ -188,7 +202,7 @@ export function TestingPanel({ projectId, localPath }) {
           <button
             type="button"
             onClick={runTests}
-            disabled={!detected?.framework || running || !companion.paired}
+            disabled={!detected?.framework || running || !companion.paired || !canAct}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-dp-accent text-white disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {running ? t("running") : t("runTests")}
@@ -232,7 +246,7 @@ export function TestingPanel({ projectId, localPath }) {
                 <button
                   type="button"
                   onClick={() => suggestFix(i)}
-                  disabled={suggestingFixIndex === i || fixRequested.has(i) || !companion.paired}
+                  disabled={suggestingFixIndex === i || fixRequested.has(i) || !companion.paired || !canAct}
                   className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded bg-dp-accent/20 text-dp-accent-strong disabled:opacity-40"
                 >
                   <Sparkles size={11} />
@@ -250,7 +264,7 @@ export function TestingPanel({ projectId, localPath }) {
           <button
             type="button"
             onClick={rescanQuality}
-            disabled={scanningQuality || !companion.paired}
+            disabled={scanningQuality || !companion.paired || !canAct}
             className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-dp-editor-overlay text-dp-editor-text disabled:opacity-40"
           >
             <RotateCw size={11} className={scanningQuality ? "animate-spin" : ""} />

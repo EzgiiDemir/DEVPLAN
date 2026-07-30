@@ -7,16 +7,29 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { useCompanion } from "@/lib/companion-context";
+import { apiFetch } from "@/lib/api";
+import { classifyCommand } from "@/lib/riskClassification";
 
 const QUICK_COMMANDS = ["npm install", "npm run dev", "npm run build", "git init", "git add .", "git commit -m \"Initial commit from DevPlan\""];
 const POLL_INTERVAL_MS = 300;
 const PORT_PATTERN = /(?:https?:\/\/)?(?:localhost|127\.0\.0\.1):(\d{2,5})/i;
 
+function relayCommandExecution(projectId, command, riskLevel, exitCode) {
+  if (!projectId) return;
+  apiFetch(`/projects/${projectId}/audit/commands`, {
+    method: "POST",
+    body: JSON.stringify({ type: "command", command, risk_level: riskLevel, exit_code: exitCode }),
+  }).catch(() => {
+    // Best-effort — the command already ran; a failed audit relay
+    // shouldn't surface as if the command itself failed.
+  });
+}
+
 // Real spawned process with streamed output, not a full PTY (no node-pty,
 // which is a fragile native build inside Electron) — plain line-buffered
 // stdin covers npm/git/dev servers fine; a redrawing interactive REPL
 // wouldn't render perfectly. Same honest trade-off as the command allowlist.
-export function TerminalPanel({ cwd, onPortDetected }) {
+export function TerminalPanel({ cwd, projectId, onPortDetected }) {
   const t = useTranslations("StudioTerminal");
   const companion = useCompanion();
   const [open, setOpen] = useState(true);
@@ -68,6 +81,12 @@ export function TerminalPanel({ cwd, onPortDetected }) {
 
   async function run(command) {
     if (!command.trim() || running || !termRef.current) return;
+
+    const riskLevel = classifyCommand(command);
+    if (riskLevel === "dangerous" && !window.confirm(t("confirmDangerous", { command }))) {
+      return;
+    }
+
     setRunning(true);
     termRef.current.write(`\r\n$ ${command}\r\n`);
 
@@ -90,6 +109,7 @@ export function TerminalPanel({ cwd, onPortDetected }) {
             processIdRef.current = null;
             setRunning(false);
             termRef.current.write(`\r\n[${t("exitCode", { code: result.exitCode })}]\r\n`);
+            relayCommandExecution(projectId, command, riskLevel, result.exitCode);
           }
         } catch (err) {
           clearInterval(pollTimerRef.current);

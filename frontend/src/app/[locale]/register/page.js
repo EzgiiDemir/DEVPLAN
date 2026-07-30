@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 import { MayaAvatar } from "@/components/MayaAvatar";
 import { AuthHeader } from "@/components/AuthHeader";
+import { GithubIcon } from "@/components/icons/GithubIcon";
+
+async function startGithubLogin() {
+  const result = await apiFetch("/oauth/github/redirect");
+  window.location.href = result.url;
+}
 
 export default function RegisterPage() {
   const t = useTranslations("Auth.register");
@@ -77,6 +84,20 @@ export default function RegisterPage() {
             {submitting ? t("submitting") : t("submit")}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-dp-faint" />
+          <span className="text-xs text-dp-muted uppercase tracking-wider">{t("orDivider")}</span>
+          <div className="flex-1 h-px bg-dp-faint" />
+        </div>
+
+        <button
+          type="button"
+          onClick={startGithubLogin}
+          className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
+        >
+          <GithubIcon size={16} /> {t("githubButton")}
+        </button>
 
         <p className="text-sm text-dp-muted mt-6 pt-6 border-t border-dp-faint text-center">
           {t("haveAccount")}{" "}

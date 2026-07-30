@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\CorrelationId;
+use App\Jobs\GenerateFeatureContentJob;
+use App\Jobs\GenerateFeaturePlanJob;
+use App\Models\AiJob;
 use App\Models\FeatureRequest;
 use App\Models\Project;
+use App\Services\AuditLogService;
 use App\Services\DevEngine\ChangeSetService;
 use App\Services\DevEngine\CheckpointService;
 use App\Services\DevEngine\FeatureAgentService;
@@ -15,38 +20,59 @@ class FeatureController extends Controller
         private FeatureAgentService $agent,
         private ChangeSetService $changeSets,
         private CheckpointService $checkpoints,
+        private AuditLogService $audit,
     ) {}
 
     public function index(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         return $project->featureRequests()->latest()->get();
     }
 
+    /**
+     * Returns 202 + a job id immediately — createAndPlan() makes an AI call,
+     * which used to block this request for however long that call takes.
+     * The frontend polls GET /ai-jobs/{id} until the job resolves.
+     */
     public function store(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'prompt' => ['required', 'string', 'max:2000'],
         ]);
 
-        $featureRequest = $this->agent->createAndPlan($project, $request->user(), $data['prompt']);
+        $aiJob = AiJob::create([
+            'project_id' => $project->id,
+            'user_id' => $request->user()->id,
+            'type' => 'feature_plan',
+            'status' => 'queued',
+            'payload' => [
+                'project_id' => $project->id,
+                'user_id' => $request->user()->id,
+                'prompt' => $data['prompt'],
+                'request_id' => CorrelationId::current(),
+            ],
+        ]);
 
-        return response()->json($featureRequest, 201);
+        GenerateFeaturePlanJob::dispatch($aiJob->id);
+
+        return response()->json(['job_id' => $aiJob->id, 'status' => $aiJob->status], 202);
     }
 
     public function show(Request $request, Project $project, FeatureRequest $featureRequest)
     {
-        $this->authorizedFeatureRequest($request, $project, $featureRequest);
+        $this->authorize('view', $project);
+        abort_unless($featureRequest->project_id === $project->id, 404);
 
         return $featureRequest->load('changeSet.files');
     }
 
     public function approvePlan(Request $request, Project $project, FeatureRequest $featureRequest)
     {
-        $this->authorizedFeatureRequest($request, $project, $featureRequest);
+        $this->authorize('act', $project);
+        abort_unless($featureRequest->project_id === $project->id, 404);
 
         $data = $request->validate([
             'approved_paths' => ['required', 'array'],
@@ -58,12 +84,24 @@ class FeatureController extends Controller
 
         $result = $this->agent->approvePlan($changeSet, $data['approved_paths']);
 
+        $this->audit->record($request->user(), 'feature.plan_approved', [
+            'feature_request_id' => $featureRequest->id,
+            'approved_paths' => $data['approved_paths'],
+        ], project: $project);
+
         return response()->json($result);
     }
 
+    /**
+     * Returns 202 + a job id immediately — generateContent() makes one AI
+     * call per approved file, sequentially, making this the longest-running
+     * of the AI endpoints. The frontend polls GET /ai-jobs/{id}; once it
+     * succeeds, the job's result carries the change_set_id to refetch.
+     */
     public function generate(Request $request, Project $project, FeatureRequest $featureRequest)
     {
-        $this->authorizedFeatureRequest($request, $project, $featureRequest);
+        $this->authorize('act', $project);
+        abort_unless($featureRequest->project_id === $project->id, 404);
 
         $data = $request->validate([
             'files' => ['sometimes', 'array'],
@@ -78,14 +116,27 @@ class FeatureController extends Controller
             ->mapWithKeys(fn ($f) => [$f['path'] => $f['content']])
             ->all();
 
-        $updated = $this->agent->generateContent($changeSet, $currentContentByPath);
+        $aiJob = AiJob::create([
+            'project_id' => $project->id,
+            'user_id' => $request->user()->id,
+            'type' => 'feature_content',
+            'status' => 'queued',
+            'payload' => [
+                'change_set_id' => $changeSet->id,
+                'current_content_by_path' => $currentContentByPath,
+                'request_id' => CorrelationId::current(),
+            ],
+        ]);
 
-        return response()->json($updated);
+        GenerateFeatureContentJob::dispatch($aiJob->id);
+
+        return response()->json(['job_id' => $aiJob->id, 'status' => $aiJob->status], 202);
     }
 
     public function approveDiff(Request $request, Project $project, FeatureRequest $featureRequest)
     {
-        $this->authorizedFeatureRequest($request, $project, $featureRequest);
+        $this->authorize('act', $project);
+        abort_unless($featureRequest->project_id === $project->id, 404);
 
         $data = $request->validate([
             'approved_paths' => ['required', 'array'],
@@ -96,6 +147,11 @@ class FeatureController extends Controller
         abort_unless($changeSet, 404);
 
         $this->changeSets->approveDiff($changeSet, $data['approved_paths']);
+
+        $this->audit->record($request->user(), 'feature.diff_approved', [
+            'feature_request_id' => $featureRequest->id,
+            'approved_paths' => $data['approved_paths'],
+        ], project: $project);
 
         return response()->json($changeSet->load('files'));
     }
@@ -108,7 +164,8 @@ class FeatureController extends Controller
      */
     public function apply(Request $request, Project $project, FeatureRequest $featureRequest)
     {
-        $this->authorizedFeatureRequest($request, $project, $featureRequest);
+        $this->authorize('act', $project);
+        abort_unless($featureRequest->project_id === $project->id, 404);
 
         $data = $request->validate([
             'applied_paths' => ['required', 'array'],
@@ -128,20 +185,14 @@ class FeatureController extends Controller
         $this->changeSets->markApplied($changeSet, $data['applied_paths']);
         $after = $this->checkpoints->record($project, $featureRequest, $data['after']['hash'], $data['after']['message']);
 
+        $this->audit->record($request->user(), 'feature.applied', [
+            'feature_request_id' => $featureRequest->id,
+            'applied_paths' => $data['applied_paths'],
+        ], project: $project);
+
         return response()->json([
             'feature_request' => $featureRequest->fresh(),
             'checkpoint' => $after,
         ]);
-    }
-
-    private function authorizeProject(Request $request, Project $project): void
-    {
-        abort_unless($project->user_id === $request->user()->id, 403);
-    }
-
-    private function authorizedFeatureRequest(Request $request, Project $project, FeatureRequest $featureRequest): void
-    {
-        $this->authorizeProject($request, $project);
-        abort_unless($featureRequest->project_id === $project->id, 404);
     }
 }

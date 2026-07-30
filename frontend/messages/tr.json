@@ -25,7 +25,12 @@
       "submitting": "Giriş yapılıyor...",
       "noAccount": "Hesabın yok mu?",
       "registerLink": "Kayıt ol",
-      "genericError": "Giriş başarısız."
+      "genericError": "Giriş başarısız.",
+      "orDivider": "ya da",
+      "githubButton": "GitHub ile devam et",
+      "mfaHeading": "Kimlik doğrulama kodunu gir",
+      "mfaCodeLabel": "6 haneli kod ya da bir kurtarma kodu",
+      "mfaSubmit": "Doğrula"
     },
     "register": {
       "heading": "DevPlan'a kayıt ol",
@@ -37,7 +42,9 @@
       "submitting": "Kayıt olunuyor...",
       "haveAccount": "Zaten hesabın var mı?",
       "loginLink": "Giriş yap",
-      "genericError": "Kayıt başarısız."
+      "genericError": "Kayıt başarısız.",
+      "orDivider": "ya da",
+      "githubButton": "GitHub ile devam et"
     }
   },
   "Dashboard": {
@@ -304,7 +311,12 @@
     "terminalTab": "Terminal",
     "previewTab": "Canlı Önizleme",
     "testsTab": "Testler",
+    "tasksTab": "Görevler",
+    "activityTab": "Etkinlik",
+    "discussionTab": "Tartışma",
     "deployButton": "Yayınla",
+    "shareButton": "Paylaş",
+    "viewerNotice": "Bu projede yalnızca görüntüleme erişimin var.",
     "phaseBadge": {
       "roadmap": "Yol Haritası",
       "execution-plan": "Uygulama Planı",
@@ -391,7 +403,8 @@
     "heading": "Terminal",
     "stop": "Durdur",
     "exitCode": "çıkış kodu {code}",
-    "inputPlaceholder": "Komut yaz (npm, git, composer, pip, php, dotnet, go, cargo, flutter, docker)..."
+    "inputPlaceholder": "Komut yaz (npm, git, composer, pip, php, dotnet, go, cargo, flutter, docker)...",
+    "confirmDangerous": "Bu komut gerçek ve geri alınması zor değişikliklere yol açabilir:\n\n{command}\n\nYine de çalıştırılsın mı?"
   },
   "StudioLivePreview": {
     "portPlaceholder": "3000",
@@ -479,7 +492,8 @@
     "scanningProgress": "Taranıyor... {done}/{total}",
     "neverScanned": "Henüz taranmadı.",
     "fileCount": "{count} dosya indekslendi",
-    "dependencyCount": "{count} bağımlılık bulundu"
+    "dependencyCount": "{count} bağımlılık bulundu",
+    "stale": "Projen son taramadan bu yana değişti — güncel sonuçlar için yeniden tara."
   },
   "StudioCheckpoints": {
     "heading": "Kontrol Noktaları",
@@ -487,13 +501,163 @@
     "confirmRevert": "\"{message}\" kontrol noktasına geri dönülsün mü? Sonraki tüm değişiklikler kaybolur.",
     "revertFailed": "Geri dönüş başarısız oldu.",
     "deployedTo": "{platform} üzerine dağıtıldı ({status})",
-    "revertedDeployNotice": "Kod {platform} üzerine dağıtıldığı ana geri döndü. Bu durumu tekrar canlıya almak için Deploy düğmesini kullan."
+    "revertedDeployNotice": "Kod {platform} üzerine dağıtıldığı ana geri döndü. Bu durumu tekrar canlıya almak için Deploy düğmesini kullan.",
+    "willStash": "Kaydedilmemiş değişikliklerin var. Önce güvenle saklanacak ve geri dönüşten sonra otomatik olarak geri yüklenecek.",
+    "noDifferences": "Fark yok.",
+    "cancel": "Vazgeç",
+    "revertPartial": "Geri dönüş tam olarak tamamlanamadı — bazı dosyalar kontrol noktasıyla eşleşmeyebilir. git status ile kontrol et.",
+    "revertStashConflict": "Geri dönüş başarılı oldu, ancak saklanan değişikliklerin geri yüklenmesinde çakışma oluştu. Değişikliklerin stash içinde güvende — çözmek için elle \"git stash pop\" çalıştır."
+  },
+  "StudioSharing": {
+    "heading": "Paylaşım",
+    "subheading": "Varsayılan olarak takımdaki herkes bu projeye erişebilir. Erişimi belirli kişilerle sınırlamak için aşağıya kişi ekle.",
+    "wholeTeam": "Tüm takıma açık",
+    "restricted": "{count} üye + yöneticiler/sahiplerle sınırlı",
+    "addMember": "Üye ekle",
+    "selectMember": "Bir takım üyesi seç…",
+    "roleOverride": "Rol (opsiyonel — takım rolünü kullanır)",
+    "useTeamRole": "Takım rolünü kullan",
+    "add": "Ekle",
+    "remove": "Kaldır",
+    "noOtherMembers": "Tüm takım üyelerinin zaten erişimi var, ya da takımda başka kimse yok.",
+    "loading": "Yükleniyor…",
+    "error": "Bir şeyler ters gitti."
+  },
+  "StudioTasks": {
+    "heading": "Görevler",
+    "addTask": "Görev ekle",
+    "titlePlaceholder": "Görev başlığı…",
+    "unassigned": "Atanmamış",
+    "assignTo": "Ata…",
+    "priority": {
+      "low": "Düşük",
+      "medium": "Orta",
+      "high": "Yüksek"
+    },
+    "status": {
+      "todo": "Yapılacak",
+      "doing": "Sürüyor",
+      "done": "Tamamlandı"
+    },
+    "empty": "Henüz görev yok.",
+    "delete": "Görevi sil"
+  },
+  "StudioActivity": {
+    "heading": "Etkinlik",
+    "empty": "Bu projede henüz bir şey olmadı.",
+    "by": "{name}",
+    "unknownUser": "biri",
+    "type": {
+      "feature_request": "Özellik isteği",
+      "checkpoint": "Kontrol noktası",
+      "test_run": "Test çalıştırması",
+      "deployment": "Dağıtım",
+      "comment": "Yorum",
+      "task": "Görev"
+    }
+  },
+  "StudioDiscussion": {
+    "heading": "Tartışma",
+    "placeholder": "Bir yorum yaz… bir takım arkadaşından bahsetmek için @isim kullan",
+    "send": "Gönder",
+    "empty": "Henüz yorum yok — tartışmayı başlat.",
+    "viewOnly": "Yalnızca görüntüleme erişimin var, yorum gönderemezsin.",
+    "delete": "Sil"
+  },
+  "Teams": {
+    "heading": "Takımlar",
+    "subheading": "Üyesi olduğun takımları ve projelerine kimlerin erişebildiğini yönet.",
+    "createTeam": "Takım oluştur",
+    "teamNamePlaceholder": "Takım adı",
+    "create": "Oluştur",
+    "personalBadge": "Kişisel",
+    "membersHeading": "Üyeler",
+    "roleLabel": {
+      "owner": "Sahip",
+      "admin": "Yönetici",
+      "developer": "Geliştirici",
+      "viewer": "Görüntüleyici"
+    },
+    "inviteHeading": "Birini davet et",
+    "emailPlaceholder": "E-posta adresi",
+    "invite": "Davet gönder",
+    "invitePending": "Davet bekliyor — {email} adresine {role} olarak gönderildi",
+    "changeRole": "Rolü değiştir",
+    "removeMember": "Kaldır",
+    "confirmRemove": "{name} bu takımdan çıkarılsın mı?",
+    "deleteTeam": "Takımı sil",
+    "confirmDeleteTeam": "Bu takım silinsin mi? Bu işlem geri alınamaz.",
+    "cannotDeletePersonal": "Kişisel bir takım silinemez.",
+    "cannotDeleteWithProjects": "Takımı silmeden önce projelerini taşı ya da sil.",
+    "lastOwnerError": "Bir takımda her zaman en az bir sahip olmalı.",
+    "loading": "Takımlar yükleniyor…",
+    "error": "Bir şeyler ters gitti.",
+    "youLabel": "(sen)"
+  },
+  "Invitations": {
+    "heading": "Davet edildin",
+    "invitedBy": "{inviter} seni {team} takımına {role} olarak davet etti",
+    "alreadyAccepted": "Bu davet zaten kullanılmış.",
+    "accept": "Daveti kabul et",
+    "accepting": "Kabul ediliyor…",
+    "accepted": "Artık {team} takımının bir üyesisin.",
+    "goToDashboard": "Panele git",
+    "needsLogin": "Bu daveti kabul etmek için {email} ile giriş yap ya da hesap oluştur.",
+    "logIn": "Giriş yap",
+    "wrongEmail": "Bu davet, giriş yaptığın adresten farklı bir e-posta adresine gönderilmiş.",
+    "notFound": "Bu davet bağlantısı geçersiz veya süresi dolmuş.",
+    "loading": "Davet yükleniyor…"
+  },
+  "Security": {
+    "heading": "Güvenlik",
+    "subheading": "Hesabının güvenliğine ve projelerindeki son etkinliklere genel bakış.",
+    "mfaStatusHeading": "İki adımlı doğrulama",
+    "mfaOn": "Açık",
+    "mfaOff": "Kapalı — Ayarlar'dan açabilirsin",
+    "sessionsHeading": "Aktif oturumlar",
+    "sessionCount": "{count} aktif oturum",
+    "recentActivityHeading": "Son güvenlik etkinliği",
+    "viewAuditHistory": "Tüm denetim geçmişini gör",
+    "viewPermissions": "İzin yöneticisini gör",
+    "manageInSettings": "Ayarlar'dan yönet",
+    "empty": "Henüz gösterilecek bir şey yok.",
+    "loading": "Yükleniyor…"
+  },
+  "SecurityAudit": {
+    "heading": "Denetim geçmişi",
+    "subheading": "Projelerin ve takımların genelinde güvenlikle ilgili işlemlerin kaydı.",
+    "projectFilter": "Proje",
+    "allProjects": "Tüm projeler",
+    "actionFilter": "İşlem",
+    "allActions": "Tüm işlemler",
+    "empty": "Eşleşen bir denetim kaydı yok.",
+    "loading": "Yükleniyor…",
+    "by": "{name}",
+    "unknownUser": "sistem"
+  },
+  "SecurityPermissions": {
+    "heading": "İzin yöneticisi",
+    "subheading": "Her takım rolünün bir projede neler yapabildiği. Birinin rolünü değiştirmek için Takımlar'a git.",
+    "goToTeams": "Takımlar'a git",
+    "ability": {
+      "view": "Projeyi görüntüle",
+      "act": "İçerik oluştur/düzenle, test çalıştır, dağıt, Maya'yı kullan",
+      "manage": "Üyeleri ve paylaşımı yönet",
+      "delete": "Projeyi sil"
+    },
+    "roleLabel": {
+      "owner": "Sahip",
+      "admin": "Yönetici",
+      "developer": "Geliştirici",
+      "viewer": "Görüntüleyici"
+    }
   },
   "MayaChat": {
     "mayaLabel": "Maya",
     "intro": "Bana bu proje hakkında bir şey sor, kod açıklamamı iste, bir hatayı anlat ya da yeni bir özellik iste.",
     "loadingHistory": "Sohbet geçmişi yükleniyor...",
     "inputPlaceholder": "Maya'ya sor...",
+    "viewOnlyPlaceholder": "Yalnızca görüntüleme erişimin var, Maya'ya mesaj gönderemezsin.",
     "thinking": "Maya düşünüyor...",
     "activeFileChip": "Açık dosya: {file}"
   },
@@ -525,15 +689,42 @@
     "applyChanges": "Değişiklikleri Uygula",
     "applying": "Diskine yazılıyor ve commit oluşturuluyor...",
     "appliedSuccess": "Değişiklikler diskine yazıldı ve iki git commit oluşturuldu.",
-    "gitFailed": "Git komutu başarısız oldu."
+    "gitFailed": "Git komutu başarısız oldu.",
+    "undoAiChange": "Bu AI değişikliğini geri al",
+    "undoAiChangeDone": "Bu AI değişikliği geri alındı.",
+    "confirmUndoAiChange": "Bu AI değişikliği geri alınsın mı? Proje, bu özellik uygulanmadan hemen önceki haline döndürülecek.",
+    "undoWillStash": "Kaydedilmemiş değişikliklerin var. Önce güvenle saklanacak ve geri almadan sonra otomatik olarak geri yüklenecek.",
+    "noDifferences": "Fark yok.",
+    "cancel": "Vazgeç",
+    "undoPartial": "Geri alma tam olarak tamamlanamadı — bazı dosyalar uygulama öncesi durumla eşleşmeyebilir. git status ile kontrol et.",
+    "undoStashConflict": "Geri alma başarılı oldu, ancak saklanan değişikliklerin geri yüklenmesinde çakışma oluştu. Değişikliklerin stash içinde güvende — çözmek için elle \"git stash pop\" çalıştır.",
+    "architectureMismatch": "Stack uyuşmazlığı",
+    "securityFindings": "{count} güvenlik bulgusu",
+    "conflictWarning": "Çakışabilir",
+    "conflictWarningDetail": "Devam eden başka bir özellik (\"{prompt}\") de bu dosyaya dokunuyor — ikisini de uygulamak birini geçersiz kılabilir.",
+    "applyConflict": "Uygulanamıyor — bu dosyalar bu diff oluşturulduğundan beri diskte değişti: {paths}. En güncel içeriği almak için planı yeniden oluştur.",
+    "duplicateWarningPriorRequest": "Bu, daha önceki bir istekle benzer görünüyor: \"{prompt}\". Muhtemelen zaten uygulanmış olabilir — onaylamadan önce kontrol etmekte fayda var.",
+    "duplicateWarningExistingSymbol": "Bunu muhtemelen zaten yapan bir dosya var: {path} içinde {symbol}. Onaylamadan önce kontrol etmekte fayda var.",
+    "confidenceHint": "DevPlan'ın bu plana ne kadar güvendiği — planın gerçek proje dosyalarına ne kadar iyi dayandığına göre belirlenir.",
+    "confidence": {
+      "high": "Yüksek güven",
+      "medium": "Orta güven",
+      "low": "Düşük güven — dikkatlice incele"
+    },
+    "risk": {
+      "medium": "Hassas",
+      "high": "Yüksek risk"
+    }
   },
   "Nav": {
     "modules": "Modüller",
     "maya": "Maya",
     "studio": "DevPlan Studio",
+    "teams": "Takımlar",
     "about": "Hakkımızda",
     "contact": "İletişim",
     "settings": "Ayarlar",
+    "security": "Güvenlik",
     "menuToggle": "Menü"
   },
   "About": {
@@ -600,7 +791,30 @@
     "paymentMethodEmpty": "Kayıtlı ödeme yöntemi yok",
     "comingSoon": "Yakında",
     "billingHistoryEmpty": "Henüz bir fatura geçmişin yok.",
-    "logout": "Çıkış yap"
+    "logout": "Çıkış yap",
+    "twoFactorHeading": "İki adımlı doğrulama",
+    "twoFactorBody": "Bir kimlik doğrulama uygulaması (Google Authenticator, Authy, 1Password vb.) ile girişe ikinci bir adım ekle.",
+    "twoFactorEnabled": "İki adımlı doğrulama açık.",
+    "twoFactorDisabled": "İki adımlı doğrulama kapalı.",
+    "enable": "Etkinleştir",
+    "disable": "Devre dışı bırak",
+    "twoFactorSecretLabel": "Gizli anahtar (kod okutamıyorsan bunu elle gir)",
+    "twoFactorUrlLabel": "otpauth:// adresi",
+    "twoFactorCodeLabel": "Onaylamak için uygulamandaki 6 haneli kodu gir",
+    "confirm": "Onayla",
+    "twoFactorConfirmed": "İki adımlı doğrulama artık açık.",
+    "recoveryCodesHeading": "Kurtarma kodları — bunları şimdi kaydet, tekrar gösterilmeyecek",
+    "recoveryCodesBody": "Kimlik doğrulama uygulamana erişimini kaybedersen her kod bir kez kullanılabilir.",
+    "done": "Tamam",
+    "sessionsHeading": "Aktif oturumlar",
+    "sessionsEmpty": "Başka aktif oturum yok.",
+    "currentSession": "Bu cihaz",
+    "revoke": "Sonlandır",
+    "revokeAllOthers": "Diğer tüm oturumlardan çıkış yap",
+    "lastActive": "Son aktif {when}",
+    "githubHeading": "Bağlı hesaplar",
+    "githubConnected": "Hesabın GitHub'a bağlı.",
+    "githubBody": "Şifre yerine GitHub ile giriş yap."
   },
   "Marketing": {
     "nav": { "login": "Giriş yap", "register": "Kayıt ol", "dashboard": "Panele git" },

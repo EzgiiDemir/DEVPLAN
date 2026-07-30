@@ -20,6 +20,7 @@ class AuthTest extends TestCase
 
         $response->assertCreated()->assertJsonPath('email', 'ezgi@example.com');
         $this->assertDatabaseHas('users', ['email' => 'ezgi@example.com']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'auth.register']);
     }
 
     public function test_cannot_register_with_duplicate_email(): void
@@ -48,6 +49,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertOk()->assertJsonPath('email', 'login@example.com');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login']);
     }
 
     public function test_login_fails_with_wrong_password(): void
@@ -63,6 +65,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login_failed']);
     }
 
     public function test_can_logout(): void
@@ -72,6 +75,7 @@ class AuthTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/logout');
 
         $response->assertNoContent();
+        $this->assertDatabaseHas('audit_logs', ['user_id' => $user->id, 'action' => 'auth.logout']);
     }
 
     public function test_authenticated_user_endpoint_returns_current_user(): void

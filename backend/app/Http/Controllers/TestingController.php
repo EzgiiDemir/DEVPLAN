@@ -17,7 +17,7 @@ class TestingController extends Controller
 
     public function detect(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         $data = $request->validate([
             'package_json_content' => ['sometimes', 'nullable', 'string'],
@@ -34,14 +34,14 @@ class TestingController extends Controller
 
     public function index(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         return $project->testRuns()->limit(20)->get();
     }
 
     public function record(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'framework' => ['required', 'string', 'in:jest,vitest,phpunit,pytest'],
@@ -64,7 +64,7 @@ class TestingController extends Controller
 
     public function generate(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate(['path' => ['required', 'string', 'max:1000']]);
 
@@ -80,7 +80,7 @@ class TestingController extends Controller
 
     public function suggestFix(Request $request, Project $project, TestRun $testRun)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
         abort_unless($testRun->project_id === $project->id, 404);
 
         $data = $request->validate(['failure_index' => ['required', 'integer', 'min:0']]);
@@ -101,10 +101,5 @@ class TestingController extends Controller
         $result = $this->maya->handleDirectFeatureAction($project, $request->user(), 'fix', $prompt, $failure['file'] ?? null);
 
         return response()->json($result, 201);
-    }
-
-    private function authorizeProject(Request $request, Project $project): void
-    {
-        abort_unless($project->user_id === $request->user()->id, 403);
     }
 }

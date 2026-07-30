@@ -5,7 +5,17 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, Loader2, Rocket, Sparkles, X, XCircle } from "lucide-react";
 import { useCompanion } from "@/lib/companion-context";
 import { apiFetch } from "@/lib/api";
+import { classifyCommand } from "@/lib/riskClassification";
 import { EnvironmentManagerPanel } from "./EnvironmentManagerPanel";
+
+function relayCommandExecution(projectId, command, exitCode) {
+  apiFetch(`/projects/${projectId}/audit/commands`, {
+    method: "POST",
+    body: JSON.stringify({ type: "command", command, risk_level: classifyCommand(command), exit_code: exitCode }),
+  }).catch(() => {
+    // Best-effort — the command already ran either way.
+  });
+}
 
 const PLATFORMS = ["vercel", "railway", "render", "docker", "aws_amplify"];
 const STEPS = ["prepare", "build", "configure", "deploy", "verify"];
@@ -20,22 +30,27 @@ async function readIfExists(companion, path) {
   }
 }
 
+// Returns a list of steps to run in sequence, never a single shell-chained
+// string — Companion no longer runs commands through a shell at all (each
+// command is parsed into argv and executed directly), so a chained
+// `build && push` string can no longer work. Two sequential commands, the
+// second only started once the first exits 0, is the same real behavior.
 function deployCommandFor(platform, dockerImageName) {
   switch (platform) {
     case "vercel":
-      return "vercel --prod --yes";
+      return ["vercel --prod --yes"];
     case "railway":
-      return "railway up";
+      return ["railway up"];
     case "aws_amplify":
-      return "amplify publish --yes";
+      return ["amplify publish --yes"];
     case "render":
       // Render's own workflow is "connect the repo once in its dashboard,
       // then redeploy on every push" — DevPlan's part is just the push.
-      return "git push";
+      return ["git push"];
     case "docker":
       return dockerImageName
-        ? `docker build -t ${dockerImageName} . && docker push ${dockerImageName}`
-        : "docker build -t devplan-app .";
+        ? [`docker build -t ${dockerImageName} .`, `docker push ${dockerImageName}`]
+        : ["docker build -t devplan-app ."];
     default:
       return null;
   }
@@ -132,6 +147,7 @@ export function DeploymentWizard({ projectId, localPath, onClose, onDeployed }) 
         return;
       }
       const result = await companion.runCommand("npm run build", localPath);
+      relayCommandExecution(projectId, "npm run build", result.exitCode);
       setBuildOutput(result.output);
       if (result.exitCode !== 0) {
         setError(t("buildFailed"));
@@ -143,6 +159,41 @@ export function DeploymentWizard({ projectId, localPath, onClose, onDeployed }) 
     } finally {
       setBuilding(false);
     }
+  }
+
+  // Runs one command to completion via Companion's background-process
+  // polling, streaming its output into `onChunk`. Resolves {exitCode}.
+  // `onProcessStarted(id)` fires as soon as the process exists, so the
+  // caller can record it against the deployment — letting a dropped
+  // browser tab reattach to the same still-running process later instead
+  // of losing track of an in-progress deployment entirely.
+  function runStepToCompletion(command, onChunk, onProcessStarted) {
+    return new Promise((resolve, reject) => {
+      companion
+        .startProcess(command, localPath)
+        .then(({ id }) => {
+          onProcessStarted?.(id);
+          let cursor = 0;
+          pollTimerRef.current = setInterval(async () => {
+            try {
+              const result = await companion.getProcessOutput(id, cursor);
+              if (result.output) {
+                cursor = result.cursor;
+                onChunk(result.output);
+              }
+              if (!result.running) {
+                clearInterval(pollTimerRef.current);
+                relayCommandExecution(projectId, command, result.exitCode);
+                resolve({ exitCode: result.exitCode });
+              }
+            } catch (err) {
+              clearInterval(pollTimerRef.current);
+              reject(err);
+            }
+          }, POLL_INTERVAL_MS);
+        })
+        .catch(reject);
+    });
   }
 
   async function startDeploy() {
@@ -160,56 +211,54 @@ export function DeploymentWizard({ projectId, localPath, onClose, onDeployed }) 
         body: JSON.stringify({ status: "deploying" }),
       });
 
-      const command = deployCommandFor(platform, dockerImageName.trim() || null);
-      const { id } = await companion.startProcess(command, localPath);
-
-      let cursor = 0;
+      const steps = deployCommandFor(platform, dockerImageName.trim() || null);
       let fullOutput = "";
-      await new Promise((resolve) => {
-        pollTimerRef.current = setInterval(async () => {
-          try {
-            const result = await companion.getProcessOutput(id, cursor);
-            if (result.output) {
-              fullOutput += result.output;
-              cursor = result.cursor;
-              setDeployOutput(fullOutput);
-            }
-            if (!result.running) {
-              clearInterval(pollTimerRef.current);
-              const detectedUrl = lastUrlIn(fullOutput);
-              setLiveUrl(detectedUrl);
+      let exitCode = 0;
+      for (const step of steps) {
+        const result = await runStepToCompletion(
+          step,
+          (chunk) => {
+            fullOutput += chunk;
+            setDeployOutput(fullOutput);
+          },
+          (processId) => {
+            apiFetch(`/projects/${projectId}/deployments/${created.id}`, {
+              method: "PATCH",
+              body: JSON.stringify({ status: "deploying", companion_process_id: String(processId) }),
+            }).catch(() => {
+              // Best-effort — worst case a dropped tab can't reattach to this step.
+            });
+          },
+        );
+        exitCode = result.exitCode;
+        if (exitCode !== 0) break; // don't run the next step (e.g. push) after a failed build
+      }
 
-              let gitCommitHash = null;
-              try {
-                const hashResult = await companion.runCommand("git rev-parse HEAD", localPath);
-                if (hashResult.exitCode === 0) gitCommitHash = hashResult.output.trim();
-              } catch {
-                // Non-fatal — the deployment record just won't link to a checkpoint.
-              }
+      const detectedUrl = lastUrlIn(fullOutput);
+      setLiveUrl(detectedUrl);
 
-              const finished = await apiFetch(`/projects/${projectId}/deployments/${created.id}`, {
-                method: "PATCH",
-                body: JSON.stringify({
-                  status: result.exitCode === 0 ? "success" : "failed",
-                  log_output: fullOutput,
-                  git_commit_hash: gitCommitHash,
-                  live_url: detectedUrl,
-                  error_message: result.exitCode === 0 ? null : t("deployFailed"),
-                }),
-              });
-              setDeployment(finished);
-              onDeployed?.();
-              if (result.exitCode === 0) setStep("verify");
-              else setError(t("deployFailed"));
-              resolve();
-            }
-          } catch (err) {
-            clearInterval(pollTimerRef.current);
-            setError(err.message);
-            resolve();
-          }
-        }, POLL_INTERVAL_MS);
+      let gitCommitHash = null;
+      try {
+        const hashResult = await companion.runCommand("git rev-parse HEAD", localPath);
+        if (hashResult.exitCode === 0) gitCommitHash = hashResult.output.trim();
+      } catch {
+        // Non-fatal — the deployment record just won't link to a checkpoint.
+      }
+
+      const finished = await apiFetch(`/projects/${projectId}/deployments/${created.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: exitCode === 0 ? "success" : "failed",
+          log_output: fullOutput,
+          git_commit_hash: gitCommitHash,
+          live_url: detectedUrl,
+          error_message: exitCode === 0 ? null : t("deployFailed"),
+        }),
       });
+      setDeployment(finished);
+      onDeployed?.();
+      if (exitCode === 0) setStep("verify");
+      else setError(t("deployFailed"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -217,12 +266,19 @@ export function DeploymentWizard({ projectId, localPath, onClose, onDeployed }) 
     }
   }
 
+  // A real server-side check (Subsystem 10 — Deployment Hardening) instead
+  // of the browser fetching the URL itself: a no-cors browser fetch can
+  // only ever tell you whether the request threw, never the actual status
+  // code, so it can't distinguish "serving traffic" from "server returned a
+  // 500" — the backend's Http client can see the real response.
   async function verifyLive() {
-    if (!liveUrl) return;
+    if (!deployment) return;
     setVerifying(true);
     try {
-      await fetch(liveUrl, { mode: "no-cors", signal: AbortSignal.timeout(8000) });
-      setVerified(true);
+      const result = await apiFetch(`/projects/${projectId}/deployments/${deployment.id}/health-check`, {
+        method: "POST",
+      });
+      setVerified(result.health_status === "healthy");
     } catch {
       setVerified(false);
     } finally {

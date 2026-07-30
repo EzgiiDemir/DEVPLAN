@@ -117,12 +117,21 @@ export function ProjectProvider({ children }) {
     }
   }
 
+  const myRole = project?.my_role ?? null;
+  // Viewers are read-only by design (Phase 10) — everything that creates,
+  // mutates, or triggers AI/deploy actions gates on this.
+  const canAct = myRole === "developer" || myRole === "admin" || myRole === "owner";
+  const canManage = myRole === "admin" || myRole === "owner";
+
   return (
     <ProjectContext.Provider
       value={{
         project,
         projects,
         loading,
+        myRole,
+        canAct,
+        canManage,
         createProject,
         switchProject,
         updateProject,

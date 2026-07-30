@@ -10,14 +10,14 @@ class ModuleItemController extends Controller
 {
     public function index(Request $request, Module $module)
     {
-        $this->authorizeModule($request, $module);
+        $this->authorize('view', $module->project);
 
         return $module->items;
     }
 
     public function store(Request $request, Module $module)
     {
-        $this->authorizeModule($request, $module);
+        $this->authorize('act', $module->project);
 
         $data = $request->validate([
             'item_type' => ['required', 'string', 'max:255'],
@@ -32,14 +32,14 @@ class ModuleItemController extends Controller
 
     public function show(Request $request, ModuleItem $item)
     {
-        $this->authorizeItem($request, $item);
+        $this->authorize('view', $item->module->project);
 
         return $item;
     }
 
     public function update(Request $request, ModuleItem $item)
     {
-        $this->authorizeItem($request, $item);
+        $this->authorize('act', $item->module->project);
 
         $data = $request->validate([
             'content' => ['sometimes', 'array'],
@@ -53,24 +53,10 @@ class ModuleItemController extends Controller
 
     public function destroy(Request $request, ModuleItem $item)
     {
-        $this->authorizeItem($request, $item);
+        $this->authorize('act', $item->module->project);
 
         $item->delete();
 
         return response()->noContent();
-    }
-
-    private function authorizeModule(Request $request, Module $module): void
-    {
-        abort_unless($module->project()->value('user_id') === $request->user()->id, 403);
-    }
-
-    private function authorizeItem(Request $request, ModuleItem $item): void
-    {
-        $ownerId = Module::whereKey($item->module_id)
-            ->join('projects', 'projects.id', '=', 'modules.project_id')
-            ->value('projects.user_id');
-
-        abort_unless($ownerId === $request->user()->id, 403);
     }
 }

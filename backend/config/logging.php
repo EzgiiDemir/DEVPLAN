@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -121,6 +122,23 @@ return [
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
+        ],
+
+        // One machine-parseable JSON line per log entry — request_id (set by
+        // App\Http\Middleware\CorrelationId) and any other Log::withContext()
+        // data is folded into each line automatically by Monolog, so a
+        // production log aggregator can group every line from one request
+        // (or one background AiJob, which re-establishes the same request_id
+        // from its payload) without parsing plain-text messages.
+        'json' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/structured.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
         ],
 
         'emergency' => [

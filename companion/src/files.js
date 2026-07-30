@@ -89,6 +89,12 @@ function writeFile(fullPath, content) {
 }
 
 function deleteFile(fullPath) {
+  // The one call site that had no .env guard at all, unlike
+  // readFile/writeFile/renameFile — the same class of gap Phase 9 found and
+  // fixed for writeFile.
+  if (ENV_FILE_PATTERN.test(path.basename(fullPath))) {
+    throw new Error("Refusing to delete an .env file through this endpoint.");
+  }
   if (!fs.existsSync(fullPath)) return;
   fs.rmSync(fullPath, { force: true });
 }

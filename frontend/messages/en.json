@@ -25,7 +25,12 @@
       "submitting": "Logging in...",
       "noAccount": "Don't have an account?",
       "registerLink": "Sign up",
-      "genericError": "Login failed."
+      "genericError": "Login failed.",
+      "orDivider": "or",
+      "githubButton": "Continue with GitHub",
+      "mfaHeading": "Enter your authenticator code",
+      "mfaCodeLabel": "6-digit code or a recovery code",
+      "mfaSubmit": "Verify"
     },
     "register": {
       "heading": "Sign up for DevPlan",
@@ -37,7 +42,9 @@
       "submitting": "Signing up...",
       "haveAccount": "Already have an account?",
       "loginLink": "Log in",
-      "genericError": "Sign up failed."
+      "genericError": "Sign up failed.",
+      "orDivider": "or",
+      "githubButton": "Continue with GitHub"
     }
   },
   "Dashboard": {
@@ -304,7 +311,12 @@
     "terminalTab": "Terminal",
     "previewTab": "Live Preview",
     "testsTab": "Tests",
+    "tasksTab": "Tasks",
+    "activityTab": "Activity",
+    "discussionTab": "Discussion",
     "deployButton": "Deploy",
+    "shareButton": "Share",
+    "viewerNotice": "You have view-only access to this project.",
     "phaseBadge": {
       "roadmap": "Roadmap",
       "execution-plan": "Execution Plan",
@@ -391,7 +403,8 @@
     "heading": "Terminal",
     "stop": "Stop",
     "exitCode": "exit code {code}",
-    "inputPlaceholder": "Type a command (npm, git, composer, pip, php, dotnet, go, cargo, flutter, docker)..."
+    "inputPlaceholder": "Type a command (npm, git, composer, pip, php, dotnet, go, cargo, flutter, docker)...",
+    "confirmDangerous": "This command can cause real, hard-to-undo changes:\n\n{command}\n\nRun it anyway?"
   },
   "StudioLivePreview": {
     "portPlaceholder": "3000",
@@ -479,7 +492,8 @@
     "scanningProgress": "Scanning... {done}/{total}",
     "neverScanned": "Not scanned yet.",
     "fileCount": "{count} files indexed",
-    "dependencyCount": "{count} dependencies found"
+    "dependencyCount": "{count} dependencies found",
+    "stale": "Your project has changed since the last scan — rescan for up-to-date results."
   },
   "StudioCheckpoints": {
     "heading": "Checkpoints",
@@ -487,13 +501,163 @@
     "confirmRevert": "Revert to checkpoint \"{message}\"? All later changes will be lost.",
     "revertFailed": "Revert failed.",
     "deployedTo": "Deployed to {platform} ({status})",
-    "revertedDeployNotice": "Code is back to the state deployed to {platform}. Use the Deploy button to push this state live again."
+    "revertedDeployNotice": "Code is back to the state deployed to {platform}. Use the Deploy button to push this state live again.",
+    "willStash": "You have uncommitted changes. They'll be safely stashed first and restored automatically after the revert.",
+    "noDifferences": "No differences.",
+    "cancel": "Cancel",
+    "revertPartial": "The revert didn't fully complete — some files may not match the checkpoint. Check git status.",
+    "revertStashConflict": "Revert succeeded, but restoring your stashed changes hit a conflict. They're safe in the stash — run \"git stash pop\" manually to resolve it."
+  },
+  "StudioSharing": {
+    "heading": "Sharing",
+    "subheading": "By default everyone on the team can access this project. Add people below to restrict it to just them.",
+    "wholeTeam": "Visible to the whole team",
+    "restricted": "Restricted to {count} member(s) + admins/owners",
+    "addMember": "Add a member",
+    "selectMember": "Select a team member…",
+    "roleOverride": "Role (optional — defaults to their team role)",
+    "useTeamRole": "Use their team role",
+    "add": "Add",
+    "remove": "Remove",
+    "noOtherMembers": "Every team member already has access, or there's no one else on the team yet.",
+    "loading": "Loading…",
+    "error": "Something went wrong."
+  },
+  "StudioTasks": {
+    "heading": "Tasks",
+    "addTask": "Add a task",
+    "titlePlaceholder": "Task title…",
+    "unassigned": "Unassigned",
+    "assignTo": "Assign to…",
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "status": {
+      "todo": "To do",
+      "doing": "In progress",
+      "done": "Done"
+    },
+    "empty": "No tasks yet.",
+    "delete": "Delete task"
+  },
+  "StudioActivity": {
+    "heading": "Activity",
+    "empty": "Nothing has happened on this project yet.",
+    "by": "by {name}",
+    "unknownUser": "someone",
+    "type": {
+      "feature_request": "Feature request",
+      "checkpoint": "Checkpoint",
+      "test_run": "Test run",
+      "deployment": "Deployment",
+      "comment": "Comment",
+      "task": "Task"
+    }
+  },
+  "StudioDiscussion": {
+    "heading": "Discussion",
+    "placeholder": "Write a comment… use @name to mention a teammate",
+    "send": "Send",
+    "empty": "No comments yet — start the discussion.",
+    "viewOnly": "You have view-only access and can't post comments.",
+    "delete": "Delete"
+  },
+  "Teams": {
+    "heading": "Teams",
+    "subheading": "Manage the teams you belong to and who has access to your projects.",
+    "createTeam": "Create a team",
+    "teamNamePlaceholder": "Team name",
+    "create": "Create",
+    "personalBadge": "Personal",
+    "membersHeading": "Members",
+    "roleLabel": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "developer": "Developer",
+      "viewer": "Viewer"
+    },
+    "inviteHeading": "Invite someone",
+    "emailPlaceholder": "Email address",
+    "invite": "Send invite",
+    "invitePending": "Invitation pending — sent to {email} as {role}",
+    "changeRole": "Change role",
+    "removeMember": "Remove",
+    "confirmRemove": "Remove {name} from this team?",
+    "deleteTeam": "Delete team",
+    "confirmDeleteTeam": "Delete this team? This can't be undone.",
+    "cannotDeletePersonal": "A personal team can't be deleted.",
+    "cannotDeleteWithProjects": "Move or delete this team's projects before deleting it.",
+    "lastOwnerError": "A team must always have at least one owner.",
+    "loading": "Loading teams…",
+    "error": "Something went wrong.",
+    "youLabel": "(you)"
+  },
+  "Invitations": {
+    "heading": "You're invited",
+    "invitedBy": "{inviter} invited you to join {team} as {role}",
+    "alreadyAccepted": "This invitation has already been used.",
+    "accept": "Accept invitation",
+    "accepting": "Accepting…",
+    "accepted": "You're now a member of {team}.",
+    "goToDashboard": "Go to dashboard",
+    "needsLogin": "Log in or create an account with {email} to accept this invitation.",
+    "logIn": "Log in",
+    "wrongEmail": "This invitation was sent to a different email address than the one you're logged in with.",
+    "notFound": "This invitation link is invalid or has expired.",
+    "loading": "Loading invitation…"
+  },
+  "Security": {
+    "heading": "Security",
+    "subheading": "An overview of your account's security and recent activity across your projects.",
+    "mfaStatusHeading": "Two-factor authentication",
+    "mfaOn": "On",
+    "mfaOff": "Off — turn it on in Settings",
+    "sessionsHeading": "Active sessions",
+    "sessionCount": "{count} active session(s)",
+    "recentActivityHeading": "Recent security activity",
+    "viewAuditHistory": "View full audit history",
+    "viewPermissions": "View permission manager",
+    "manageInSettings": "Manage in Settings",
+    "empty": "Nothing to show yet.",
+    "loading": "Loading…"
+  },
+  "SecurityAudit": {
+    "heading": "Audit history",
+    "subheading": "A record of security-relevant actions across your projects and teams.",
+    "projectFilter": "Project",
+    "allProjects": "All projects",
+    "actionFilter": "Action",
+    "allActions": "All actions",
+    "empty": "No matching audit entries.",
+    "loading": "Loading…",
+    "by": "by {name}",
+    "unknownUser": "system"
+  },
+  "SecurityPermissions": {
+    "heading": "Permission manager",
+    "subheading": "What each team role can do on a project. To change someone's role, go to Teams.",
+    "goToTeams": "Go to Teams",
+    "ability": {
+      "view": "View project",
+      "act": "Create/edit content, run tests, deploy, use Maya",
+      "manage": "Manage members & sharing",
+      "delete": "Delete the project"
+    },
+    "roleLabel": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "developer": "Developer",
+      "viewer": "Viewer"
+    }
   },
   "MayaChat": {
     "mayaLabel": "Maya",
     "intro": "Ask me anything about this project, get code explained, describe a bug, or request a new feature.",
     "loadingHistory": "Loading chat history...",
     "inputPlaceholder": "Ask Maya...",
+    "viewOnlyPlaceholder": "You have view-only access and can't send messages to Maya.",
     "thinking": "Maya is thinking...",
     "activeFileChip": "Open file: {file}"
   },
@@ -525,15 +689,42 @@
     "applyChanges": "Apply Changes",
     "applying": "Writing to disk and committing...",
     "appliedSuccess": "Changes written to disk and two git commits created.",
-    "gitFailed": "Git command failed."
+    "gitFailed": "Git command failed.",
+    "undoAiChange": "Undo this AI change",
+    "undoAiChangeDone": "This AI change has been undone.",
+    "confirmUndoAiChange": "Undo this AI change? The project will be reverted to how it was right before this feature was applied.",
+    "undoWillStash": "You have uncommitted changes. They'll be safely stashed first and restored automatically after the undo.",
+    "noDifferences": "No differences.",
+    "cancel": "Cancel",
+    "undoPartial": "The undo didn't fully complete — some files may not match the pre-apply state. Check git status.",
+    "undoStashConflict": "Undo succeeded, but restoring your stashed changes hit a conflict. They're safe in the stash — run \"git stash pop\" manually to resolve it.",
+    "architectureMismatch": "Stack mismatch",
+    "securityFindings": "{count} security finding(s)",
+    "conflictWarning": "May conflict",
+    "conflictWarningDetail": "Another in-progress feature (\"{prompt}\") also touches this file — applying both may overwrite one of them.",
+    "applyConflict": "Can't apply — these files changed on disk since this diff was generated: {paths}. Regenerate the plan to pick up the latest content.",
+    "duplicateWarningPriorRequest": "This looks similar to an earlier request: \"{prompt}\". It may already be implemented — worth checking before approving.",
+    "duplicateWarningExistingSymbol": "A file that might already do this exists: {symbol} in {path}. Worth checking before approving.",
+    "confidenceHint": "How confident DevPlan is in this plan, based on how well it's grounded in your actual project files.",
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence — review carefully"
+    },
+    "risk": {
+      "medium": "Sensitive",
+      "high": "High risk"
+    }
   },
   "Nav": {
     "modules": "Modules",
     "maya": "Maya",
     "studio": "DevPlan Studio",
+    "teams": "Teams",
     "about": "About",
     "contact": "Contact",
     "settings": "Settings",
+    "security": "Security",
     "menuToggle": "Menu"
   },
   "About": {
@@ -600,7 +791,30 @@
     "paymentMethodEmpty": "No payment method on file",
     "comingSoon": "Coming soon",
     "billingHistoryEmpty": "You don't have any billing history yet.",
-    "logout": "Log out"
+    "logout": "Log out",
+    "twoFactorHeading": "Two-factor authentication",
+    "twoFactorBody": "Add a second step at login using an authenticator app (Google Authenticator, Authy, 1Password, etc.).",
+    "twoFactorEnabled": "Two-factor authentication is on.",
+    "twoFactorDisabled": "Two-factor authentication is off.",
+    "enable": "Enable",
+    "disable": "Disable",
+    "twoFactorSecretLabel": "Secret (enter this manually if you can't scan a code)",
+    "twoFactorUrlLabel": "otpauth:// URL",
+    "twoFactorCodeLabel": "Enter the 6-digit code from your app to confirm",
+    "confirm": "Confirm",
+    "twoFactorConfirmed": "Two-factor authentication is now on.",
+    "recoveryCodesHeading": "Recovery codes — save these now, they won't be shown again",
+    "recoveryCodesBody": "Each code can be used once if you lose access to your authenticator app.",
+    "done": "Done",
+    "sessionsHeading": "Active sessions",
+    "sessionsEmpty": "No other active sessions.",
+    "currentSession": "This device",
+    "revoke": "Revoke",
+    "revokeAllOthers": "Log out all other sessions",
+    "lastActive": "Last active {when}",
+    "githubHeading": "Connected accounts",
+    "githubConnected": "Your account is connected to GitHub.",
+    "githubBody": "Sign in with GitHub instead of a password."
   },
   "Marketing": {
     "nav": { "login": "Log in", "register": "Sign up", "dashboard": "Go to dashboard" },

@@ -37,10 +37,28 @@ export function AuthProvider({ children }) {
     return newUser;
   }
 
+  /**
+   * A response of {requires_mfa: true} means the password checked out but
+   * the session isn't authenticated yet — the caller must collect a real
+   * code and call loginWithMfa() to finish. Only a real user object here
+   * means login is actually complete.
+   */
   async function login(email, password) {
-    const loggedInUser = await apiFetch("/login", {
+    const result = await apiFetch("/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
+    });
+    if (result?.requires_mfa) return result;
+
+    localStorage.setItem(SESSION_HINT_KEY, "1");
+    setUser(result);
+    return result;
+  }
+
+  async function loginWithMfa(code) {
+    const loggedInUser = await apiFetch("/login/mfa", {
+      method: "POST",
+      body: JSON.stringify({ code }),
     });
     localStorage.setItem(SESSION_HINT_KEY, "1");
     setUser(loggedInUser);
@@ -83,7 +101,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, register, login, logout, clearSession, updateName, updatePassword }}
+      value={{ user, loading, register, login, loginWithMfa, logout, clearSession, updateName, updatePassword }}
     >
       {children}
     </AuthContext.Provider>

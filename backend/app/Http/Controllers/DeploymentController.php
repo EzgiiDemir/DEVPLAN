@@ -19,7 +19,9 @@ class DeploymentController extends Controller
 
     public function analyze(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        // 'act', not 'view' — this triggers a real AI summary call, and
+        // Viewers should never trigger AI actions even read-adjacent ones.
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'platform' => ['required', 'string', 'in:vercel,railway,render,docker,aws_amplify'],
@@ -40,7 +42,7 @@ class DeploymentController extends Controller
 
     public function generateConfig(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'path' => ['required', 'string', 'max:255'],
@@ -60,14 +62,14 @@ class DeploymentController extends Controller
 
     public function index(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         return $project->deployments()->with('checkpoint')->limit(20)->get();
     }
 
     public function store(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'platform' => ['required', 'string', 'in:vercel,railway,render,docker,aws_amplify'],
@@ -80,7 +82,7 @@ class DeploymentController extends Controller
 
     public function update(Request $request, Project $project, Deployment $deployment)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
         abort_unless($deployment->project_id === $project->id, 404);
 
         $data = $request->validate([
@@ -89,6 +91,7 @@ class DeploymentController extends Controller
             'git_commit_hash' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
             'live_url' => ['sometimes', 'nullable', 'url'],
             'error_message' => ['sometimes', 'nullable', 'string'],
+            'companion_process_id' => ['sometimes', 'nullable', 'string', 'max:64'],
         ]);
 
         if (in_array($data['status'], ['success', 'failed'], true)) {
@@ -101,14 +104,31 @@ class DeploymentController extends Controller
                 $data['error_message'] ?? null,
             );
         } else {
-            $updated = $this->deployments->recordProgress($deployment, $data['status'], $data['log_output'] ?? null);
+            $updated = $this->deployments->recordProgress(
+                $deployment,
+                $data['status'],
+                $data['log_output'] ?? null,
+                $data['companion_process_id'] ?? null,
+            );
         }
 
         return response()->json($updated);
     }
 
-    private function authorizeProject(Request $request, Project $project): void
+    /**
+     * A real, server-side check of whether the deployment's own reported
+     * live_url actually responds — separate from the CLI-exit-code-based
+     * 'success' status, which only means the deploy tool itself didn't
+     * error, not that the app is actually serving traffic.
+     */
+    public function checkHealth(Request $request, Project $project, Deployment $deployment)
     {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        // 'act', not 'view' — this persists a new health_status/
+        // last_health_checked_at, the same mutate-vs-read-only line every
+        // other endpoint here draws.
+        $this->authorize('act', $project);
+        abort_unless($deployment->project_id === $project->id, 404);
+
+        return response()->json($this->deployments->checkHealth($deployment));
     }
 }

@@ -1,5 +1,6 @@
-const { spawn, execFile } = require("child_process");
-const { isAllowed } = require("./commands");
+const { execFile } = require("child_process");
+const crossSpawn = require("cross-spawn");
+const { validateCommand } = require("./commandPolicy");
 
 const MAX_OUTPUT_BYTES = 200 * 1024;
 const MAX_CONCURRENT = 3;
@@ -30,8 +31,9 @@ class ProcessManager {
   }
 
   start({ command, cwd }) {
-    if (!isAllowed(command)) {
-      throw new Error(`Command not allowed: "${command}". Only npm/pnpm/yarn/git/composer/pip/python/php/dotnet/go/cargo/flutter/docker commands can run here.`);
+    const validated = validateCommand(command);
+    if (!validated.ok) {
+      throw new Error(validated.reason);
     }
     const runningCount = [...this.processes.values()].filter((p) => p.running).length;
     if (runningCount >= MAX_CONCURRENT) {
@@ -39,7 +41,11 @@ class ProcessManager {
     }
 
     const id = String(this.nextId++);
-    const child = spawn(command, { cwd, shell: true, windowsHide: true });
+    // cross-spawn, not spawn(command, {shell:true}) — launches the real
+    // binary directly (safely resolving Windows .cmd shims) with an argv
+    // array, so shell metacharacters in any argument are inert rather than
+    // being re-interpreted the way a shell:true string would be.
+    const child = crossSpawn(validated.binary, validated.args, { cwd, windowsHide: true });
 
     const entry = {
       child,

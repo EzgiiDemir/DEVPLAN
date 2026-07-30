@@ -6,6 +6,8 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\AiTextGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class DeploymentControllerTest extends TestCase
@@ -208,5 +210,156 @@ class DeploymentControllerTest extends TestCase
 
         $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/deployments")->assertForbidden();
         $this->actingAs($intruder)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel'])->assertForbidden();
+    }
+
+    /**
+     * Covers Subsystem 10 (Deployment Hardening): the analyzer can only
+     * verify a fact it actually has — whether the project has migration
+     * files indexed at all — not whether they've been run against whatever
+     * database the deploy target uses.
+     */
+    public function test_analyze_warns_about_indexed_migrations_needing_to_run(): void
+    {
+        $this->mock(AiTextGenerator::class, function ($mock) {
+            $mock->shouldReceive('generate')->once()->andReturn('summary');
+        });
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+        $project->files()->create([
+            'path' => 'database/migrations/2026_01_01_create_widgets_table.php',
+            'language' => 'php',
+            'content_hash' => 'x',
+        ]);
+
+        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+            'platform' => 'railway',
+            'has_railway_json' => true,
+        ]);
+
+        $response->assertOk()->assertJsonPath('migration_count', 1);
+        $this->assertStringContainsString('migration', implode(' ', $response->json('warnings')));
+    }
+
+    public function test_health_check_records_healthy_for_a_responding_url(): void
+    {
+        Http::fake(['https://my-app.vercel.app' => Http::response('ok', 200)]);
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'success',
+            'live_url' => 'https://my-app.vercel.app',
+        ]);
+
+        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check");
+
+        $response->assertOk()->assertJsonPath('health_status', 'healthy');
+        $this->assertNotNull($response->json('last_health_checked_at'));
+    }
+
+    public function test_health_check_records_unhealthy_for_an_unreachable_url(): void
+    {
+        Http::fake(['https://my-app.vercel.app' => Http::response('Server Error', 500)]);
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'success',
+            'live_url' => 'https://my-app.vercel.app',
+        ]);
+
+        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check");
+
+        $response->assertOk()->assertJsonPath('health_status', 'unhealthy');
+    }
+
+    public function test_health_check_requires_project_ownership(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $project = $this->projectFor($owner);
+
+        $started = $this->actingAs($owner)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+
+        $this->actingAs($intruder)
+            ->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check")
+            ->assertForbidden();
+    }
+
+    public function test_a_hardcoded_looking_token_in_log_output_is_redacted_before_being_stored(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+
+        $response = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'building',
+            'log_output' => "Logging in...\nAPI_KEY=sk_live_abcdefgh12345678\nBuild started.",
+        ]);
+
+        $response->assertOk();
+        $this->assertStringNotContainsString('sk_live_abcdefgh12345678', $response->json('log_output'));
+        $this->assertStringContainsString('[REDACTED]', $response->json('log_output'));
+        $this->assertStringContainsString('Build started.', $response->json('log_output'));
+    }
+
+    public function test_the_companion_process_id_is_recorded_and_cleared_once_the_deploy_finishes(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+
+        $building = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'building',
+            'companion_process_id' => '42',
+        ]);
+        $building->assertOk()->assertJsonPath('companion_process_id', '42');
+
+        $finished = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'success',
+        ]);
+        $finished->assertOk()->assertJsonPath('companion_process_id', null);
+    }
+
+    /**
+     * Covers Subsystem 12 (Production Logging): deployment status
+     * transitions write a structured log line, not just the DB row update —
+     * so an ops log stream shows deployment activity without querying the
+     * database.
+     */
+    public function test_deployment_status_transitions_are_logged(): void
+    {
+        Log::spy();
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $deploymentId = $started->json('id');
+
+        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+            'status' => 'success',
+            'live_url' => 'https://my-app.vercel.app',
+        ]);
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn ($message, $context) => $message === 'deployment.status_changed' && $context['status'] === 'preparing')
+            ->once();
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn ($message, $context) => $message === 'deployment.status_changed' && $context['status'] === 'success')
+            ->once();
     }
 }

@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\CorrelationId;
+use App\Jobs\ProcessMayaMessageJob;
+use App\Models\AiJob;
 use App\Models\Project;
-use App\Services\DevEngine\MayaChatService;
 use Illuminate\Http\Request;
 
 class MayaController extends Controller
 {
-    public function __construct(private MayaChatService $maya) {}
-
     public function index(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('view', $project);
 
         // orderByDesc('id') rather than latest() — created_at has only
         // second-level granularity and user+assistant rows in the same turn
@@ -30,23 +30,39 @@ class MayaController extends Controller
             ->values();
     }
 
+    /**
+     * Returns 202 + a job id immediately — handleMessage() makes at least
+     * one AI call (classify) and often two (classify + reply, or classify +
+     * a full feature-planning call), which used to block this request for
+     * the whole round trip. The frontend renders the user's own message
+     * optimistically on send and polls GET /ai-jobs/{id} for the assistant's
+     * reply rather than waiting on this response.
+     */
     public function store(Request $request, Project $project)
     {
-        $this->authorizeProject($request, $project);
+        $this->authorize('act', $project);
 
         $data = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
             'active_file' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ]);
 
-        $result = $this->maya->handleMessage($project, $request->user(), $data['message'], $data['active_file'] ?? null);
-        collect($result['messages'])->each->load('featureRequest.changeSet.files');
+        $aiJob = AiJob::create([
+            'project_id' => $project->id,
+            'user_id' => $request->user()->id,
+            'type' => 'maya_message',
+            'status' => 'queued',
+            'payload' => [
+                'project_id' => $project->id,
+                'user_id' => $request->user()->id,
+                'message' => $data['message'],
+                'active_file' => $data['active_file'] ?? null,
+                'request_id' => CorrelationId::current(),
+            ],
+        ]);
 
-        return response()->json($result, 201);
-    }
+        ProcessMayaMessageJob::dispatch($aiJob->id);
 
-    private function authorizeProject(Request $request, Project $project): void
-    {
-        abort_unless($project->user_id === $request->user()->id, 403);
+        return response()->json(['job_id' => $aiJob->id, 'status' => $aiJob->status], 202);
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'description', 'local_path', 'workspace_state', 'quality_snapshot', 'quality_scanned_at'])]
+#[Fillable(['title', 'description', 'local_path', 'team_id', 'workspace_state', 'quality_snapshot', 'quality_scanned_at', 'last_known_git_head'])]
 class Project extends Model
 {
     protected function casts(): array
@@ -22,6 +22,21 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class)->orderByDesc('id');
     }
 
     public function modules(): HasMany

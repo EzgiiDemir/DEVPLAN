@@ -4,15 +4,24 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 import { MayaAvatar } from "@/components/MayaAvatar";
 import { AuthHeader } from "@/components/AuthHeader";
+import { GithubIcon } from "@/components/icons/GithubIcon";
+
+async function startGithubLogin() {
+  const result = await apiFetch("/oauth/github/redirect");
+  window.location.href = result.url;
+}
 
 export default function LoginPage() {
   const t = useTranslations("Auth.login");
-  const { login } = useAuth();
+  const { login, loginWithMfa } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [needsMfa, setNeedsMfa] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +30,25 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      await login(email, password);
+      const result = await login(email, password);
+      if (result?.requires_mfa) {
+        setNeedsMfa(true);
+        return;
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err.message || t("genericError"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleMfaSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      await loginWithMfa(mfaCode);
       router.push("/dashboard");
     } catch (err) {
       setError(err.message || t("genericError"));
@@ -41,39 +68,79 @@ export default function LoginPage() {
           <p className="text-sm text-dp-muted font-medium">{t("subheading")}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            placeholder={t("email")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors"
-          />
-          <input
-            type="password"
-            required
-            placeholder={t("password")}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors"
-          />
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="text-sm font-semibold px-4 py-3.5 rounded-full mt-2 bg-dp-solid text-dp-on-solid hover:opacity-90 disabled:opacity-50 transition-colors"
-          >
-            {submitting ? t("submitting") : t("submit")}
-          </button>
-        </form>
+        {needsMfa ? (
+          <form onSubmit={handleMfaSubmit} className="flex flex-col gap-3">
+            <p className="text-sm font-semibold text-center mb-1">{t("mfaHeading")}</p>
+            <input
+              autoFocus
+              required
+              placeholder={t("mfaCodeLabel")}
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value)}
+              className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors text-center tracking-widest"
+            />
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="text-sm font-semibold px-4 py-3.5 rounded-full mt-2 bg-dp-solid text-dp-on-solid hover:opacity-90 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? t("submitting") : t("mfaSubmit")}
+            </button>
+          </form>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <input
+                type="email"
+                required
+                placeholder={t("email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors"
+              />
+              <input
+                type="password"
+                required
+                placeholder={t("password")}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors"
+              />
+              {error && <p className="text-xs text-red-500">{error}</p>}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="text-sm font-semibold px-4 py-3.5 rounded-full mt-2 bg-dp-solid text-dp-on-solid hover:opacity-90 disabled:opacity-50 transition-colors"
+              >
+                {submitting ? t("submitting") : t("submit")}
+              </button>
+            </form>
 
-        <p className="text-sm text-dp-muted mt-6 pt-6 border-t border-dp-faint text-center">
-          {t("noAccount")}{" "}
-          <Link href="/register" className="text-dp-accent-strong font-semibold">
-            {t("registerLink")}
-          </Link>
-        </p>
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-dp-faint" />
+              <span className="text-xs text-dp-muted uppercase tracking-wider">{t("orDivider")}</span>
+              <div className="flex-1 h-px bg-dp-faint" />
+            </div>
+
+            <button
+              type="button"
+              onClick={startGithubLogin}
+              className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
+            >
+              <GithubIcon size={16} /> {t("githubButton")}
+            </button>
+          </>
+        )}
+
+        {!needsMfa && (
+          <p className="text-sm text-dp-muted mt-6 pt-6 border-t border-dp-faint text-center">
+            {t("noAccount")}{" "}
+            <Link href="/register" className="text-dp-accent-strong font-semibold">
+              {t("registerLink")}
+            </Link>
+          </p>
+        )}
       </div>
       </div>
     </div>

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { History, Rocket, Undo2 } from "lucide-react";
 import { useCompanion } from "@/lib/companion-context";
 import { apiFetch } from "@/lib/api";
+import { prepareRevert, performSafeRevert } from "@/lib/safeRevert";
+import { RevertConfirmDialog } from "./RevertConfirmDialog";
 
 export function CheckpointHistoryPanel({ projectId, localPath, refreshKey }) {
   const t = useTranslations("StudioCheckpoints");
@@ -13,6 +15,8 @@ export function CheckpointHistoryPanel({ projectId, localPath, refreshKey }) {
   const [checkpoints, setCheckpoints] = useState([]);
   const [reverting, setReverting] = useState(null);
   const [error, setError] = useState(null);
+  const [pendingRevert, setPendingRevert] = useState(null); // { checkpoint, dirty, diffStat }
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -27,26 +31,57 @@ export function CheckpointHistoryPanel({ projectId, localPath, refreshKey }) {
     };
   }, [projectId, refreshKey]);
 
-  async function revert(checkpoint) {
-    if (!window.confirm(t("confirmRevert", { message: checkpoint.message }))) return;
-
+  async function startRevert(checkpoint) {
+    setError(null);
     setReverting(checkpoint.id);
+    try {
+      const { dirty, diffStat } = await prepareRevert({
+        companion,
+        localPath,
+        targetHash: checkpoint.git_commit_hash,
+      });
+      setPendingRevert({ checkpoint, dirty, diffStat });
+    } catch (err) {
+      setError(err.message);
+      setReverting(null);
+    }
+  }
+
+  async function confirmRevert() {
+    const { checkpoint, dirty } = pendingRevert;
+    setConfirming(true);
     setError(null);
     try {
-      const result = await companion.runCommand(`git reset --hard ${checkpoint.git_commit_hash}`, localPath);
-      if (result.exitCode !== 0) throw new Error(result.output || t("revertFailed"));
+      const result = await performSafeRevert({
+        companion,
+        localPath,
+        targetHash: checkpoint.git_commit_hash,
+        dirty,
+        stashLabel: `DevPlan: auto-stash before revert to ${checkpoint.git_commit_hash.slice(0, 7)}`,
+      });
+
+      if (result.partial) setError(t("revertPartial"));
+      if (result.stashConflict) setError(t("revertStashConflict"));
+
       // Rollback is "go back to a checkpoint, then deploy again" — not a
       // platform-specific undo API. If this checkpoint came from a
       // deployment, the code is now back to that state; redeploying (via
       // the same Deploy button) is a separate, deliberate next step.
-      if (checkpoint.deployment) {
+      if (!result.partial && !result.stashConflict && checkpoint.deployment) {
         window.alert(t("revertedDeployNotice", { platform: checkpoint.deployment.platform }));
       }
     } catch (err) {
       setError(err.message);
     } finally {
+      setConfirming(false);
       setReverting(null);
+      setPendingRevert(null);
     }
+  }
+
+  function cancelRevert() {
+    setPendingRevert(null);
+    setReverting(null);
   }
 
   if (checkpoints.length === 0) return null;
@@ -72,7 +107,7 @@ export function CheckpointHistoryPanel({ projectId, localPath, refreshKey }) {
             )}
             <button
               type="button"
-              onClick={() => revert(cp)}
+              onClick={() => startRevert(cp)}
               disabled={!companion.paired || reverting === cp.id}
               title={t("revert")}
               className="text-dp-editor-muted hover:text-dp-editor-text disabled:opacity-30 flex-shrink-0"
@@ -83,6 +118,21 @@ export function CheckpointHistoryPanel({ projectId, localPath, refreshKey }) {
         ))}
       </div>
       {error && <p className="text-[10px] text-red-400 mt-1">{error}</p>}
+
+      {pendingRevert && (
+        <RevertConfirmDialog
+          title={t("confirmRevert", { message: pendingRevert.checkpoint.message })}
+          diffStat={pendingRevert.diffStat}
+          dirty={pendingRevert.dirty}
+          stashNotice={t("willStash")}
+          noDiffLabel={t("noDifferences")}
+          onCancel={cancelRevert}
+          onConfirm={confirmRevert}
+          confirming={confirming}
+          confirmLabel={t("revert")}
+          cancelLabel={t("cancel")}
+        />
+      )}
     </div>
   );
 }

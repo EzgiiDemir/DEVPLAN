@@ -4,9 +4,18 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useCompanion } from "@/lib/companion-context";
 import { apiFetch } from "@/lib/api";
+import { pollAiJob } from "@/lib/aiJobs";
 
 function sanitizeForShell(text) {
   return (text || "").replace(/[^A-Za-z0-9 .:_-]/g, "").trim().slice(0, 72) || "update";
+}
+
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text ?? "");
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 // Deterministic, no AI needed — this is the "low-risk, auto-applied" half of
@@ -101,10 +110,16 @@ export function useFeatureFlow({ featureRequest: initialFeatureRequest, projectI
       }
       setOldContentByPath(fetchedOldContent);
 
-      const updatedChangeSet = await apiFetch(
+      const dispatched = await apiFetch(
         `/projects/${projectId}/features/${featureRequest.id}/generate`,
         { method: "POST", body: JSON.stringify({ files: filesForGenerate }) },
       );
+      await pollAiJob(dispatched.job_id);
+      // generateContent() returns only { change_set_id } via the job — the
+      // hydrated change set (with files) comes from the existing show()
+      // endpoint, which already eager-loads changeSet.files.
+      const refreshed = await apiFetch(`/projects/${projectId}/features/${featureRequest.id}`);
+      const updatedChangeSet = refreshed.change_set;
       setFeatureRequest((prev) => ({ ...prev, change_set: updatedChangeSet }));
       setApplyCheckedPaths(new Set((updatedChangeSet.files || []).map((f) => f.path)));
       setStage("diff-review");
@@ -143,6 +158,33 @@ export function useFeatureFlow({ featureRequest: initialFeatureRequest, projectI
 
       const planFiles = featureRequest?.change_set?.files || [];
       const approvedFiles = planFiles.filter((f) => approvedPaths.includes(f.path));
+
+      // Optimistic-concurrency check (Subsystem 9 — ChangeSet Conflict
+      // Detection): base_content_hash is what each diff was generated
+      // against. If the file on disk no longer matches it — someone else
+      // (another feature, a manual edit) changed it since — applying this
+      // diff would silently clobber that change. Only 'create'/'modify'
+      // carry a base_content_hash; 'delete' is never checked (see
+      // FeatureAgentService::generateContent()'s note on why).
+      const conflictedPaths = [];
+      for (const file of approvedFiles) {
+        if (!file.base_content_hash) continue;
+        let onDiskContent = "";
+        try {
+          onDiskContent = (await companion.readFile(file.path)).content;
+        } catch {
+          // Doesn't exist on disk — expected for a 'create' whose baseline is "".
+        }
+        const onDiskHash = await sha256Hex(onDiskContent);
+        if (onDiskHash !== file.base_content_hash) {
+          conflictedPaths.push(file.path);
+        }
+      }
+
+      if (conflictedPaths.length > 0) {
+        throw new Error(t("applyConflict", { paths: conflictedPaths.join(", ") }));
+      }
+
       for (const file of approvedFiles) {
         if (file.action === "delete") {
           await companion.deleteFile(file.path);

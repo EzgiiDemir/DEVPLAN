@@ -9,14 +9,14 @@ class ModuleController extends Controller
 {
     public function show(Request $request, Module $module)
     {
-        $this->authorizeAccess($request, $module);
+        $this->authorize('view', $module->project);
 
         return $module->load('items');
     }
 
     public function update(Request $request, Module $module)
     {
-        $this->authorizeAccess($request, $module);
+        $this->authorize('act', $module->project);
 
         $data = $request->validate([
             'status' => ['required', 'in:not_started,in_progress,completed'],
@@ -25,10 +25,5 @@ class ModuleController extends Controller
         $module->update($data);
 
         return $module;
-    }
-
-    private function authorizeAccess(Request $request, Module $module): void
-    {
-        abort_unless($module->project()->value('user_id') === $request->user()->id, 403);
     }
 }

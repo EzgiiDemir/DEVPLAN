@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\FeatureRequest;
+use App\Models\Project;
 use App\Services\AiTextGenerator;
 use App\Services\AnthropicService;
 use App\Services\GroqService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,5 +42,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth-attempts', function ($request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // Comments are polymorphic (Project or FeatureRequest); a morph map
+        // keeps commentable_type as a clean, stable API value instead of a
+        // leaked fully-qualified class name.
+        Relation::morphMap([
+            'project' => Project::class,
+            'feature_request' => FeatureRequest::class,
+        ]);
     }
 }

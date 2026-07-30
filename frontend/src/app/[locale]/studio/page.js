@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, ChevronDown, ChevronRight, File, Folder, Rocket } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, File, Folder, Rocket, Share2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useProject } from "@/lib/project-context";
@@ -21,6 +21,10 @@ import { IdeWorkspace } from "@/components/studio/IdeWorkspace";
 import { LivePreviewPanel } from "@/components/studio/LivePreviewPanel";
 import { TestingPanel } from "@/components/studio/TestingPanel";
 import { DeploymentWizard } from "@/components/studio/DeploymentWizard";
+import { ProjectSharingModal } from "@/components/studio/ProjectSharingModal";
+import { TasksPanel } from "@/components/studio/TasksPanel";
+import { ActivityFeedPanel } from "@/components/studio/ActivityFeedPanel";
+import { CommentsPanel } from "@/components/studio/CommentsPanel";
 
 const DEMO_TREE = {
   name: "project",
@@ -234,7 +238,7 @@ export default function StudioPage() {
   const tCommon = useTranslations("Common");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { project, loading: projectLoading, updateProject } = useProject();
+  const { project, loading: projectLoading, updateProject, canAct, canManage } = useProject();
   const companion = useCompanion();
 
   const [loadingArtifacts, setLoadingArtifacts] = useState(true);
@@ -250,6 +254,7 @@ export default function StudioPage() {
   const [detectedPort, setDetectedPort] = useState(null);
   const [bottomTab, setBottomTab] = useState("terminal");
   const [showDeployWizard, setShowDeployWizard] = useState(false);
+  const [showSharing, setShowSharing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
@@ -379,7 +384,17 @@ export default function StudioPage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {useRealIde && (
+          {useRealIde && canManage && (
+            <button
+              type="button"
+              onClick={() => setShowSharing(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-dp-editor-overlay text-dp-editor-text"
+            >
+              <Share2 size={13} />
+              {t("shareButton")}
+            </button>
+          )}
+          {useRealIde && canAct && (
             <button
               type="button"
               onClick={() => setShowDeployWizard(true)}
@@ -394,6 +409,12 @@ export default function StudioPage() {
         </div>
       </div>
 
+      {!canAct && (
+        <p className="px-4 py-1.5 text-[11px] text-dp-editor-muted bg-dp-editor-overlay/40 border-b border-dp-editor-border">
+          {t("viewerNotice")}
+        </p>
+      )}
+
       {showDeployWizard && (
         <DeploymentWizard
           projectId={project.id}
@@ -401,6 +422,10 @@ export default function StudioPage() {
           onClose={() => setShowDeployWizard(false)}
           onDeployed={() => setCheckpointVersion((v) => v + 1)}
         />
+      )}
+
+      {showSharing && (
+        <ProjectSharingModal projectId={project.id} teamId={project.team_id} onClose={() => setShowSharing(false)} />
       )}
 
       {phase === "roadmap" && <RoadmapPanel project={project} onContinue={() => goToPhase("execution-plan")} />}
@@ -428,7 +453,7 @@ export default function StudioPage() {
 
           <div className="flex flex-1 min-h-0">
             <div className="w-56 flex-shrink-0 bg-dp-editor-panel border-r border-dp-editor-border overflow-y-auto">
-              <ProjectBrainPanel projectId={project.id} />
+              <ProjectBrainPanel projectId={project.id} localPath={localPath} />
               <CheckpointHistoryPanel projectId={project.id} localPath={localPath} refreshKey={checkpointVersion} />
               {useRealIde ? (
                 <FileExplorerPanel projectId={project.id} activeFile={activeFile} onSelectFile={setActiveFile} />
@@ -472,11 +497,32 @@ export default function StudioPage() {
                   >
                     {t("testsTab")}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("tasks")}
+                    className={bottomTab === "tasks" ? "text-dp-editor-text font-semibold" : "text-dp-editor-muted"}
+                  >
+                    {t("tasksTab")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("activity")}
+                    className={bottomTab === "activity" ? "text-dp-editor-text font-semibold" : "text-dp-editor-muted"}
+                  >
+                    {t("activityTab")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("discussion")}
+                    className={bottomTab === "discussion" ? "text-dp-editor-text font-semibold" : "text-dp-editor-muted"}
+                  >
+                    {t("discussionTab")}
+                  </button>
                 </div>
                 {/* TerminalPanel stays mounted even when another tab is active, so its
                     process polling and xterm instance survive switching tabs. */}
                 <div style={{ display: bottomTab === "terminal" ? "block" : "none" }}>
-                  <TerminalPanel cwd={localPath} onPortDetected={setDetectedPort} />
+                  <TerminalPanel cwd={localPath} projectId={project.id} onPortDetected={setDetectedPort} />
                 </div>
                 {bottomTab === "preview" && (
                   <div style={{ height: 240 }} className="flex-shrink-0">
@@ -485,7 +531,22 @@ export default function StudioPage() {
                 )}
                 {bottomTab === "tests" && (
                   <div style={{ height: 240 }} className="flex-shrink-0">
-                    <TestingPanel projectId={project.id} localPath={localPath} />
+                    <TestingPanel projectId={project.id} localPath={localPath} canAct={canAct} />
+                  </div>
+                )}
+                {bottomTab === "tasks" && (
+                  <div style={{ height: 240 }} className="flex-shrink-0">
+                    <TasksPanel projectId={project.id} teamId={project.team_id} canAct={canAct} />
+                  </div>
+                )}
+                {bottomTab === "activity" && (
+                  <div style={{ height: 240 }} className="flex-shrink-0">
+                    <ActivityFeedPanel projectId={project.id} />
+                  </div>
+                )}
+                {bottomTab === "discussion" && (
+                  <div style={{ height: 240 }} className="flex-shrink-0">
+                    <CommentsPanel projectId={project.id} canAct={canAct} />
                   </div>
                 )}
               </div>
@@ -510,7 +571,7 @@ export default function StudioPage() {
                     <p className="text-dp-editor-muted italic">{t("placeholderBody", { name: file?.label })}</p>
                   )}
                 </div>
-                <TerminalPanel cwd={localPath} />
+                <TerminalPanel cwd={localPath} projectId={project.id} />
               </div>
             )}
 
@@ -520,6 +581,7 @@ export default function StudioPage() {
                 localPath={localPath}
                 activeFile={useRealIde ? activeFile : null}
                 onApplied={() => setCheckpointVersion((v) => v + 1)}
+                canAct={canAct}
               />
             </div>
           </div>

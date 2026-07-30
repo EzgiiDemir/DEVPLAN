@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Sun, Moon, LogOut, CreditCard, FolderKanban, Check } from "lucide-react";
+import { Sun, Moon, LogOut, CreditCard, FolderKanban, Check, ShieldCheck, Monitor, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useProject } from "@/lib/project-context";
 import { useTheme } from "@/lib/theme-context";
+import { GithubIcon } from "@/components/icons/GithubIcon";
 
 const PLANS = ["free", "pro", "team"];
 
@@ -16,6 +17,193 @@ function SettingsSection({ title, children }) {
       <h2 className="text-sm font-semibold uppercase tracking-wider text-dp-muted mb-4">{title}</h2>
       {children}
     </section>
+  );
+}
+
+function TwoFactorSection() {
+  const t = useTranslations("Settings");
+  const [status, setStatus] = useState(null);
+  const [setup, setSetup] = useState(null);
+  const [code, setCode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    apiFetch("/security/two-factor").then(setStatus).catch(() => setStatus({ enabled: false }));
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function startEnable() {
+    setError("");
+    setBusy(true);
+    try {
+      setSetup(await apiFetch("/security/two-factor/generate", { method: "POST" }));
+    } catch (err) {
+      setError(err.message || t("genericError"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirm(e) {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      const result = await apiFetch("/security/two-factor/confirm", {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      });
+      setRecoveryCodes(result.recovery_codes);
+      setCode("");
+    } catch (err) {
+      setError(err.message || t("genericError"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function finishSetup() {
+    setSetup(null);
+    setRecoveryCodes(null);
+    load();
+  }
+
+  async function disable() {
+    setBusy(true);
+    try {
+      await apiFetch("/security/two-factor", { method: "DELETE" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!status) return null;
+
+  return (
+    <SettingsSection title={t("twoFactorHeading")}>
+      <p className="text-xs text-dp-muted mb-4">{t("twoFactorBody")}</p>
+
+      {recoveryCodes ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-dp-green">{t("twoFactorConfirmed")}</p>
+          <div className="bg-dp-faint rounded-xl p-4">
+            <p className="text-xs font-semibold mb-2">{t("recoveryCodesHeading")}</p>
+            <p className="text-xs text-dp-muted mb-3">{t("recoveryCodesBody")}</p>
+            <div className="grid grid-cols-2 gap-2 font-mono text-sm">
+              {recoveryCodes.map((c) => (
+                <span key={c}>{c}</span>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={finishSetup}
+            className="self-start text-sm font-semibold px-4 py-2.5 rounded-full bg-dp-solid text-dp-on-solid hover:opacity-90 transition-colors"
+          >
+            {t("done")}
+          </button>
+        </div>
+      ) : setup ? (
+        <form onSubmit={confirm} className="flex flex-col gap-3">
+          <div className="bg-dp-faint rounded-xl p-4 text-xs font-mono break-all">
+            <p className="text-dp-muted mb-1 font-sans">{t("twoFactorSecretLabel")}</p>
+            {setup.secret}
+          </div>
+          <input
+            autoFocus
+            required
+            placeholder={t("twoFactorCodeLabel")}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-2.5 text-sm w-full outline-none transition-colors"
+          />
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <button
+            type="submit"
+            disabled={busy}
+            className="self-start text-sm font-semibold px-4 py-2.5 rounded-full bg-dp-solid text-dp-on-solid hover:opacity-90 disabled:opacity-50 transition-colors"
+          >
+            {t("confirm")}
+          </button>
+        </form>
+      ) : (
+        <div className="flex items-center gap-3">
+          <ShieldCheck size={16} className={status.enabled ? "text-dp-green" : "text-dp-muted-2"} />
+          <span className="text-sm flex-1">{status.enabled ? t("twoFactorEnabled") : t("twoFactorDisabled")}</span>
+          <button
+            onClick={status.enabled ? disable : startEnable}
+            disabled={busy}
+            className={`text-sm font-semibold px-4 py-2 rounded-full transition-colors disabled:opacity-50 ${
+              status.enabled ? "text-red-500 hover:bg-red-500/10" : "bg-dp-solid text-dp-on-solid hover:opacity-90"
+            }`}
+          >
+            {status.enabled ? t("disable") : t("enable")}
+          </button>
+        </div>
+      )}
+    </SettingsSection>
+  );
+}
+
+function SessionsSection() {
+  const t = useTranslations("Settings");
+  const [sessions, setSessions] = useState(null);
+
+  function load() {
+    apiFetch("/security/sessions").then(setSessions).catch(() => setSessions([]));
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function revoke(id) {
+    await apiFetch(`/security/sessions/${id}`, { method: "DELETE" });
+    load();
+  }
+
+  async function revokeOthers() {
+    await apiFetch("/security/sessions/others", { method: "DELETE" });
+    load();
+  }
+
+  if (!sessions) return null;
+
+  return (
+    <SettingsSection title={t("sessionsHeading")}>
+      {sessions.length === 0 ? (
+        <p className="text-xs text-dp-muted">{t("sessionsEmpty")}</p>
+      ) : (
+        <div className="flex flex-col gap-2 mb-3">
+          {sessions.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-dp-faint">
+              <Monitor size={16} className="text-dp-muted-2 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">
+                  {s.user_agent || t("currentSession")} {s.is_current && <span className="text-dp-accent-strong">· {t("currentSession")}</span>}
+                </div>
+                <div className="text-xs text-dp-muted">{t("lastActive", { when: new Date(s.last_active_at).toLocaleString() })}</div>
+              </div>
+              {!s.is_current && (
+                <button onClick={() => revoke(s.id)} className="text-dp-muted hover:text-red-500 transition-colors flex-shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {sessions.some((s) => !s.is_current) && (
+        <button onClick={revokeOthers} className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors">
+          {t("revokeAllOthers")}
+        </button>
+      )}
+    </SettingsSection>
   );
 }
 
@@ -140,7 +328,7 @@ function PasswordForm() {
 
 export default function SettingsPage() {
   const t = useTranslations("Settings");
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { project, projects, switchProject } = useProject();
   const { theme, setTheme } = useTheme();
   const [subscription, setSubscription] = useState(null);
@@ -175,6 +363,18 @@ export default function SettingsPage() {
       <SettingsSection title={t("passwordHeading")}>
         <PasswordForm />
       </SettingsSection>
+
+      {user?.oauth_provider === "github" && (
+        <SettingsSection title={t("githubHeading")}>
+          <div className="flex items-center gap-3">
+            <GithubIcon size={16} className="text-dp-muted-2 flex-shrink-0" />
+            <span className="text-sm">{t("githubConnected")}</span>
+          </div>
+        </SettingsSection>
+      )}
+
+      <TwoFactorSection />
+      <SessionsSection />
 
       <SettingsSection title={t("appearanceHeading")}>
         <p className="text-xs text-dp-muted mb-4">{t("appearanceBody")}</p>

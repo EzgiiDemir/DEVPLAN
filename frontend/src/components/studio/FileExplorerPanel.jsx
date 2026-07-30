@@ -156,6 +156,13 @@ export function FileExplorerPanel({ projectId, activeFile, onSelectFile }) {
       await companion.deleteFile(path);
       await refresh();
       if (activeFile === path) onSelectFile(null);
+      apiFetch(`/projects/${projectId}/audit/commands`, {
+        method: "POST",
+        body: JSON.stringify({ type: "file_delete", path, risk_level: "sensitive" }),
+      }).catch(() => {
+        // Best-effort — the delete already happened; a failed audit relay
+        // shouldn't surface as if the delete itself failed.
+      });
     } catch (err) {
       setError(err.message);
     }
