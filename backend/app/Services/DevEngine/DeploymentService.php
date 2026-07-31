@@ -5,6 +5,7 @@ namespace App\Services\DevEngine;
 use App\Models\Deployment;
 use App\Models\Project;
 use App\Models\User;
+use App\Notifications\DeploymentFinishedNotification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -107,6 +108,8 @@ class DeploymentService
             'status' => $success ? 'success' : 'failed',
             'live_url' => $liveUrl,
         ]);
+
+        $deployment->user?->notify(new DeploymentFinishedNotification($deployment));
 
         return $deployment->fresh();
     }

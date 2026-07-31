@@ -14,7 +14,7 @@ class ExistingFeatureDetectorTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Detector Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Detector Test']);
 
         return Project::findOrFail($response->json('id'));
     }

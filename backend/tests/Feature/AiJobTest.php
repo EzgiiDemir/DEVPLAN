@@ -30,7 +30,7 @@ class AiJobTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'AI Job Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'AI Job Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -49,7 +49,7 @@ class AiJobTest extends TestCase
             'result' => ['feature_request_id' => 42],
         ]);
 
-        $response = $this->actingAs($user)->getJson("/api/ai-jobs/{$aiJob->id}");
+        $response = $this->actingAs($user)->getJson("/api/v1/ai-jobs/{$aiJob->id}");
 
         $response->assertOk()->assertJson([
             'id' => $aiJob->id,
@@ -74,7 +74,7 @@ class AiJobTest extends TestCase
             'payload' => ['prompt' => 'x'],
         ]);
 
-        $this->actingAs($intruder)->getJson("/api/ai-jobs/{$aiJob->id}")->assertForbidden();
+        $this->actingAs($intruder)->getJson("/api/v1/ai-jobs/{$aiJob->id}")->assertForbidden();
     }
 
     public function test_cancel_marks_a_still_queued_job_cancelled(): void
@@ -90,7 +90,7 @@ class AiJobTest extends TestCase
             'payload' => ['prompt' => 'x'],
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/ai-jobs/{$aiJob->id}/cancel");
+        $response = $this->actingAs($user)->postJson("/api/v1/ai-jobs/{$aiJob->id}/cancel");
 
         $response->assertOk()->assertJsonPath('status', 'cancelled');
         $this->assertNotNull($aiJob->fresh()->cancelled_at);
@@ -116,7 +116,7 @@ class AiJobTest extends TestCase
             'result' => ['feature_request_id' => 1],
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/ai-jobs/{$aiJob->id}/cancel");
+        $response = $this->actingAs($user)->postJson("/api/v1/ai-jobs/{$aiJob->id}/cancel");
 
         $response->assertOk()->assertJsonPath('status', 'succeeded');
         $this->assertNull($aiJob->fresh()->cancelled_at);

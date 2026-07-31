@@ -57,7 +57,7 @@ class SessionControllerTest extends TestCase
         $this->seedSession('session-a', $user, 'Chrome on Mac');
         $this->seedSession('session-b', $user, 'Safari on iPhone');
 
-        $response = $this->actingAs($user)->getJson('/api/security/sessions');
+        $response = $this->actingAs($user)->getJson('/api/v1/security/sessions');
         $response->assertOk()->assertJsonCount(2);
         $agents = collect($response->json())->pluck('user_agent');
         $this->assertTrue($agents->contains('Chrome on Mac'));
@@ -69,7 +69,7 @@ class SessionControllerTest extends TestCase
         $user = User::factory()->create();
         $this->seedSession('session-a', $user);
 
-        $this->actingAs($user)->deleteJson('/api/security/sessions/session-a')->assertNoContent();
+        $this->actingAs($user)->deleteJson('/api/v1/security/sessions/session-a')->assertNoContent();
 
         $this->assertDatabaseMissing('sessions', ['id' => 'session-a']);
         $this->assertDatabaseHas('audit_logs', ['user_id' => $user->id, 'action' => 'auth.session_revoked']);
@@ -89,7 +89,7 @@ class SessionControllerTest extends TestCase
         // survives. The accounting identity (revoked + remaining == the
         // original count, or one more if the request's own fresh session
         // also got persisted) holds regardless of which id is "current".
-        $response = $this->actingAs($user)->deleteJson('/api/security/sessions/others');
+        $response = $this->actingAs($user)->deleteJson('/api/v1/security/sessions/others');
         $response->assertOk();
 
         $remaining = DB::table('sessions')->where('user_id', $user->id)->count();
@@ -103,8 +103,8 @@ class SessionControllerTest extends TestCase
         $userB = User::factory()->create();
         $this->seedSession('user-b-session', $userB);
 
-        $this->actingAs($userA)->getJson('/api/security/sessions')->assertOk()->assertJsonCount(0);
-        $this->actingAs($userA)->deleteJson('/api/security/sessions/user-b-session')->assertStatus(404);
+        $this->actingAs($userA)->getJson('/api/v1/security/sessions')->assertOk()->assertJsonCount(0);
+        $this->actingAs($userA)->deleteJson('/api/v1/security/sessions/user-b-session')->assertStatus(404);
         $this->assertDatabaseHas('sessions', ['id' => 'user-b-session']);
     }
 }

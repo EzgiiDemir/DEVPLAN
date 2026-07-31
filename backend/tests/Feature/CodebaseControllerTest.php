@@ -14,7 +14,7 @@ class CodebaseControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Codebase Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Codebase Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -35,7 +35,7 @@ class CodebaseControllerTest extends TestCase
             'content_hash' => 'def456',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/codebase/diff", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/codebase/diff", [
             'files' => [
                 ['path' => 'src/existing.js', 'hash' => 'abc123'],
                 ['path' => 'src/new.js', 'hash' => 'newhash'],
@@ -65,7 +65,7 @@ class CodebaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/codebase/index", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/codebase/index", [
             'files' => [
                 [
                     'path' => 'src/lib/helper.js',
@@ -110,7 +110,7 @@ class CodebaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $this->actingAs($user)->postJson("/api/projects/{$project->id}/codebase/index", [
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/codebase/index", [
             'files' => [
                 [
                     'path' => 'src/components/Broken.jsx',
@@ -144,7 +144,7 @@ class CodebaseControllerTest extends TestCase
             'unresolved_imports' => ['./missing'],
         ]);
 
-        $response = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/files");
+        $response = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/files");
 
         $response->assertOk();
         $file = collect($response->json())->firstWhere('path', 'src/Bad.js');
@@ -162,7 +162,7 @@ class CodebaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $this->actingAs($user)->postJson("/api/projects/{$project->id}/codebase/diff", [
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/codebase/diff", [
             'files' => [['path' => 'src/existing.js', 'hash' => 'abc']],
             'git_head' => 'abc123',
         ])->assertOk();
@@ -176,10 +176,10 @@ class CodebaseControllerTest extends TestCase
         $project = $this->projectFor($user);
         $project->update(['last_known_git_head' => 'abc123']);
 
-        $fresh = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status?current_head=abc123");
+        $fresh = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/status?current_head=abc123");
         $fresh->assertOk()->assertJsonPath('stale', false);
 
-        $stale = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status?current_head=def456");
+        $stale = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/status?current_head=def456");
         $stale->assertOk()->assertJsonPath('stale', true);
     }
 
@@ -189,9 +189,37 @@ class CodebaseControllerTest extends TestCase
         $project = $this->projectFor($user);
         $project->update(['last_known_git_head' => 'abc123']);
 
-        $response = $this->actingAs($user)->getJson("/api/projects/{$project->id}/codebase/status");
+        $response = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/status");
 
         $response->assertOk()->assertJsonPath('stale', false)->assertJsonPath('last_known_git_head', 'abc123');
+    }
+
+    /**
+     * Covers the Redis-backed caching added to status(): file_count is
+     * cached for 30s, but a real index() call invalidates it immediately —
+     * the very next status() call must reflect the new count, not the
+     * stale cached one.
+     */
+    public function test_indexing_a_new_file_invalidates_the_cached_status_immediately(): void
+    {
+        $this->mock(\App\Services\AiTextGenerator::class, function ($mock) {
+            $mock->shouldReceive('generate')->once()->andReturn(json_encode([
+                'src/new.js' => ['summary' => 'A new file.', 'symbols' => []],
+            ]));
+        });
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+
+        $before = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/status");
+        $before->assertOk()->assertJsonPath('file_count', 0);
+
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/codebase/index", [
+            'files' => [['path' => 'src/new.js', 'hash' => 'h1', 'content' => 'export const x = 1;']],
+        ])->assertOk();
+
+        $after = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/codebase/status");
+        $after->assertOk()->assertJsonPath('file_count', 1);
     }
 
     public function test_status_and_files_endpoints_require_project_ownership(): void
@@ -200,10 +228,10 @@ class CodebaseControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/codebase/status")
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/codebase/status")
             ->assertForbidden();
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/codebase/files")
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/codebase/files")
             ->assertForbidden();
     }
 }

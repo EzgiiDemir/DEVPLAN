@@ -7,6 +7,7 @@ use App\Models\Module;
 use App\Models\ModuleItem;
 use App\Models\Project;
 use App\Models\ProjectFile;
+use App\Services\ProjectCache;
 use Illuminate\Support\Collection;
 
 /**
@@ -20,6 +21,8 @@ class ContextEngineService
     private const MAX_CONTEXT_FILES = 15;
 
     private const MAX_ACTIVITY_ITEMS_DEFAULT = 8;
+
+    public function __construct(private ProjectCache $cache) {}
 
     /**
      * Keyword match against indexed file paths/summaries, expanded by one hop
@@ -262,18 +265,20 @@ class ContextEngineService
      */
     public function techStack(Project $project): array
     {
-        $stackModule = Module::where('project_id', $project->id)->where('module_type', 'tech_stack')->first();
-        $stackItem = $stackModule
-            ? ModuleItem::where('module_id', $stackModule->id)->where('item_type', 'tech_stack')->first()
-            : null;
+        return $this->cache->rememberTechStack($project, function () use ($project) {
+            $stackModule = Module::where('project_id', $project->id)->where('module_type', 'tech_stack')->first();
+            $stackItem = $stackModule
+                ? ModuleItem::where('module_id', $stackModule->id)->where('item_type', 'tech_stack')->first()
+                : null;
 
-        $s = $stackItem->content ?? [];
+            $s = $stackItem->content ?? [];
 
-        return [
-            'frontend' => $s['frontend']['selected'] ?? '',
-            'backend' => $s['backend']['selected'] ?? '',
-            'database' => $s['database']['selected'] ?? '',
-        ];
+            return [
+                'frontend' => $s['frontend']['selected'] ?? '',
+                'backend' => $s['backend']['selected'] ?? '',
+                'database' => $s['database']['selected'] ?? '',
+            ];
+        });
     }
 
     /**
@@ -297,7 +302,10 @@ class ContextEngineService
      */
     public function codingStandards(Project $project): ?string
     {
-        return $this->scaffoldTreeStandards($project) ?? $this->indexedFileStandards($project);
+        return $this->cache->rememberCodingStandards(
+            $project,
+            fn () => $this->scaffoldTreeStandards($project) ?? $this->indexedFileStandards($project),
+        );
     }
 
     private function scaffoldTreeStandards(Project $project): ?string

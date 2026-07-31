@@ -14,7 +14,7 @@ class TestingControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Testing Agent Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Testing Agent Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -24,7 +24,7 @@ class TestingControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/detect", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/detect", [
             'package_json_content' => json_encode(['devDependencies' => ['jest' => '^29.0.0']]),
         ]);
 
@@ -50,7 +50,7 @@ class TestingControllerTest extends TestCase
             ]],
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/record", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/record", [
             'framework' => 'jest',
             'result_file_content' => $resultJson,
             'exit_code' => 1,
@@ -67,7 +67,7 @@ class TestingControllerTest extends TestCase
             'status' => 'failed',
         ]);
 
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/tests");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/tests");
         $history->assertOk()->assertJsonCount(1);
     }
 
@@ -83,7 +83,7 @@ class TestingControllerTest extends TestCase
         $project = $this->projectFor($user);
         $project->files()->create(['path' => 'src/math.js', 'language' => 'javascript', 'content_hash' => 'x']);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/generate", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/generate", [
             'path' => 'src/math.js',
         ]);
 
@@ -119,7 +119,7 @@ class TestingControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $recordResponse = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/record", [
+        $recordResponse = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/record", [
             'framework' => 'jest',
             'exit_code' => 1,
             'result_file_content' => json_encode([
@@ -134,7 +134,7 @@ class TestingControllerTest extends TestCase
         ]);
         $testRunId = $recordResponse->json('id');
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/{$testRunId}/suggest-fix", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/{$testRunId}/suggest-fix", [
             'failure_index' => 0,
         ]);
 
@@ -152,7 +152,7 @@ class TestingControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $recordResponse = $this->actingAs($user)->postJson("/api/projects/{$project->id}/tests/record", [
+        $recordResponse = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/tests/record", [
             'framework' => 'jest',
             'exit_code' => 0,
             'result_file_content' => json_encode(['numTotalTests' => 1, 'numPassedTests' => 1, 'numFailedTests' => 0, 'testResults' => []]),
@@ -160,7 +160,7 @@ class TestingControllerTest extends TestCase
         $testRunId = $recordResponse->json('id');
 
         $this->actingAs($user)
-            ->postJson("/api/projects/{$project->id}/tests/{$testRunId}/suggest-fix", ['failure_index' => 0])
+            ->postJson("/api/v1/projects/{$project->id}/tests/{$testRunId}/suggest-fix", ['failure_index' => 0])
             ->assertNotFound();
     }
 
@@ -170,7 +170,7 @@ class TestingControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/tests")->assertForbidden();
-        $this->actingAs($intruder)->postJson("/api/projects/{$project->id}/tests/detect", [])->assertForbidden();
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/tests")->assertForbidden();
+        $this->actingAs($intruder)->postJson("/api/v1/projects/{$project->id}/tests/detect", [])->assertForbidden();
     }
 }

@@ -14,7 +14,7 @@ class CorrelationIdTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->getJson('/api/projects');
+        $response = $this->actingAs($user)->getJson('/api/v1/projects');
 
         $response->assertOk();
         $requestId = $response->headers->get('X-Request-Id');
@@ -28,7 +28,7 @@ class CorrelationIdTest extends TestCase
 
         $response = $this->actingAs($user)
             ->withHeaders(['X-Request-Id' => 'client-supplied-trace-id-123'])
-            ->getJson('/api/projects');
+            ->getJson('/api/v1/projects');
 
         $response->assertOk();
         $this->assertSame('client-supplied-trace-id-123', $response->headers->get('X-Request-Id'));
@@ -38,8 +38,8 @@ class CorrelationIdTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $first = $this->actingAs($user)->getJson('/api/projects')->headers->get('X-Request-Id');
-        $second = $this->actingAs($user)->getJson('/api/projects')->headers->get('X-Request-Id');
+        $first = $this->actingAs($user)->getJson('/api/v1/projects')->headers->get('X-Request-Id');
+        $second = $this->actingAs($user)->getJson('/api/v1/projects')->headers->get('X-Request-Id');
 
         $this->assertNotSame($first, $second);
     }

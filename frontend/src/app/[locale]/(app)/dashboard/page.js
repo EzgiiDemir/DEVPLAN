@@ -2,20 +2,23 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, Sparkles, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { MODULES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth-context";
 import { useProject } from "@/lib/project-context";
 import { MayaAvatar } from "@/components/MayaAvatar";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
+import { WelcomeModal } from "@/components/WelcomeModal";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 
 function CreateProjectForm({ firstName, onDone }) {
   const t = useTranslations("Dashboard.createProject");
-  const { createProject } = useProject();
+  const { createProject, createDemoProject } = useProject();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e) {
@@ -29,6 +32,19 @@ function CreateProjectForm({ firstName, onDone }) {
       setError(err.message || t("genericError"));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDemo() {
+    setError("");
+    setDemoLoading(true);
+    try {
+      await createDemoProject();
+      onDone?.();
+    } catch (err) {
+      setError(err.message || t("genericError"));
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -55,12 +71,26 @@ function CreateProjectForm({ firstName, onDone }) {
         {error && <p className="text-xs text-red-500">{error}</p>}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || demoLoading}
           className="text-sm font-semibold px-5 py-3 rounded-full mt-1 bg-dp-solid text-dp-on-solid hover:opacity-90 disabled:opacity-50 transition-colors"
         >
           {submitting ? t("submitting") : t("submit")}
         </button>
       </form>
+      <div className="flex items-center gap-3 my-4">
+        <div className="flex-1 h-px bg-dp-faint" />
+        <span className="text-xs text-dp-muted uppercase tracking-wider">{t("orDivider")}</span>
+        <div className="flex-1 h-px bg-dp-faint" />
+      </div>
+      <button
+        type="button"
+        onClick={handleDemo}
+        disabled={submitting || demoLoading}
+        className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-3 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full disabled:opacity-50"
+      >
+        <Sparkles size={15} />
+        {demoLoading ? t("demoLoading") : t("tryDemo")}
+      </button>
     </div>
   );
 }
@@ -70,9 +100,10 @@ export default function DashboardPage() {
   const tCommon = useTranslations("Common");
   const tModules = useTranslations("Modules");
   const tMaya = useTranslations("Dashboard.maya");
-  const { user } = useAuth();
+  const { user, completeOnboarding } = useAuth();
   const { project, loading: projectLoading } = useProject();
   const [creating, setCreating] = useState(false);
+  const [dismissingWelcome, setDismissingWelcome] = useState(false);
 
   if (!user || projectLoading) {
     return (
@@ -84,10 +115,24 @@ export default function DashboardPage() {
 
   const firstName = user.name.split(" ")[0];
 
+  async function dismissWelcome() {
+    setDismissingWelcome(true);
+    try {
+      await completeOnboarding();
+    } finally {
+      setDismissingWelcome(false);
+    }
+  }
+
+  const welcomeModal = !user.onboarding_completed_at && (
+    <WelcomeModal firstName={firstName} onDismiss={dismissWelcome} dismissing={dismissingWelcome} />
+  );
+
   if (!project) {
     return (
       <div className="max-w-md mx-auto w-full px-4 sm:px-6 pt-16 sm:pt-20">
         <CreateProjectForm firstName={firstName} />
+        {welcomeModal}
       </div>
     );
   }
@@ -136,13 +181,15 @@ export default function DashboardPage() {
             <div className="h-full bg-dp-accent rounded-full transition-[width] duration-300" style={{ width: `${pct}%` }} />
           </div>
           <Link
-            href={allDone ? "/studio" : `/modules/${nextModule.id}`}
+            href={allDone ? "/review" : `/modules/${nextModule.id}`}
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-dp-solid text-dp-on-solid text-sm font-semibold hover:opacity-90 transition-colors"
           >
             {allDone ? tMaya("ctaStudio") : pct > 0 ? tMaya("ctaContinue") : tMaya("ctaStart")} <ChevronRight size={16} />
           </Link>
         </div>
       </div>
+
+      <OnboardingChecklist project={project} modulesDone={completedCount} totalModules={MODULES.length} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
         {MODULES.map((m) => {
@@ -185,6 +232,7 @@ export default function DashboardPage() {
           );
         })}
       </div>
+      {welcomeModal}
     </div>
   );
 }

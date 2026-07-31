@@ -36,7 +36,7 @@ class OAuthControllerTest extends TestCase
     {
         config(['services.github.client_id' => null]);
 
-        $this->getJson('/api/oauth/github/redirect')
+        $this->getJson('/api/v1/oauth/github/redirect')
             ->assertStatus(503)
             ->assertJsonPath('configured', false);
     }
@@ -45,14 +45,14 @@ class OAuthControllerTest extends TestCase
     {
         config(['services.github.client_id' => 'test-client-id', 'services.github.client_secret' => 'test-secret']);
 
-        $this->getJson('/api/oauth/github/redirect')->assertOk()->assertJsonStructure(['url']);
+        $this->getJson('/api/v1/oauth/github/redirect')->assertOk()->assertJsonStructure(['url']);
     }
 
     public function test_first_time_github_login_creates_a_real_user_and_personal_team(): void
     {
         $this->fakeGithubUser(['id' => '111', 'name' => 'Ada Lovelace', 'email' => 'ada@example.com', 'nickname' => 'ada']);
 
-        $response = $this->get('/api/oauth/github/callback');
+        $response = $this->get('/api/v1/oauth/github/callback');
 
         $response->assertRedirect();
         $user = User::where('email', 'ada@example.com')->firstOrFail();
@@ -65,11 +65,11 @@ class OAuthControllerTest extends TestCase
     public function test_a_second_login_with_the_same_provider_id_reuses_the_same_user(): void
     {
         $this->fakeGithubUser(['id' => '222', 'name' => 'Ada Lovelace', 'email' => 'ada2@example.com']);
-        $this->get('/api/oauth/github/callback');
+        $this->get('/api/v1/oauth/github/callback');
         $firstCount = User::count();
 
         $this->fakeGithubUser(['id' => '222', 'name' => 'Ada Lovelace', 'email' => 'ada2@example.com']);
-        $this->get('/api/oauth/github/callback');
+        $this->get('/api/v1/oauth/github/callback');
 
         $this->assertSame($firstCount, User::count());
     }
@@ -79,7 +79,7 @@ class OAuthControllerTest extends TestCase
         $existing = User::factory()->create(['email' => 'linked@example.com']);
 
         $this->fakeGithubUser(['id' => '333', 'name' => 'Someone', 'email' => 'linked@example.com']);
-        $this->get('/api/oauth/github/callback');
+        $this->get('/api/v1/oauth/github/callback');
 
         $this->assertSame(1, User::where('email', 'linked@example.com')->count());
         $this->assertSame('github', $existing->fresh()->oauth_provider);

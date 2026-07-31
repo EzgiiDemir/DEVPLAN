@@ -15,7 +15,7 @@ class FeatureControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Feature Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Feature Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -46,10 +46,10 @@ class FeatureControllerTest extends TestCase
      */
     private function storeFeatureAndGetResult(User $user, Project $project, string $prompt): array
     {
-        $store = $this->actingAs($user)->postJson("/api/projects/{$project->id}/features", ['prompt' => $prompt]);
+        $store = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/features", ['prompt' => $prompt]);
         $store->assertStatus(202);
 
-        $job = $this->actingAs($user)->getJson("/api/ai-jobs/{$store->json('job_id')}");
+        $job = $this->actingAs($user)->getJson("/api/v1/ai-jobs/{$store->json('job_id')}");
         $job->assertOk()->assertJsonPath('status', 'succeeded');
 
         return $job->json('result');
@@ -58,12 +58,12 @@ class FeatureControllerTest extends TestCase
     private function generateAndGetResult(User $user, Project $project, int $featureRequestId, array $body = []): array
     {
         $generate = $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/generate",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/generate",
             $body,
         );
         $generate->assertStatus(202);
 
-        $job = $this->actingAs($user)->getJson("/api/ai-jobs/{$generate->json('job_id')}");
+        $job = $this->actingAs($user)->getJson("/api/v1/ai-jobs/{$generate->json('job_id')}");
         $job->assertOk()->assertJsonPath('status', 'succeeded');
 
         return $job->json('result');
@@ -87,7 +87,7 @@ class FeatureControllerTest extends TestCase
         $result = $this->storeFeatureAndGetResult($user, $project, 'Add a wishlist feature so users can save products.');
         $featureRequestId = $result['feature_request_id'];
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $show->assertOk()
             ->assertJsonPath('status', 'awaiting_plan_approval')
             ->assertJsonCount(2, 'change_set.files');
@@ -121,7 +121,7 @@ class FeatureControllerTest extends TestCase
         $project = $this->projectFor($user);
 
         $result = $this->storeFeatureAndGetResult($user, $project, 'Completely unrelated gibberish prompt zzz.');
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$result['feature_request_id']}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$result['feature_request_id']}");
 
         $show->assertOk()->assertJsonPath('change_set.confidence_level', 'low');
     }
@@ -151,16 +151,16 @@ class FeatureControllerTest extends TestCase
         $first = $this->storeFeatureAndGetResult($user, $project, 'Add a wishlist feature so users can save products.');
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$first['feature_request_id']}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$first['feature_request_id']}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
         $this->generateAndGetResult($user, $project, $first['feature_request_id']);
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$first['feature_request_id']}/diff/approve",
+            "/api/v1/projects/{$project->id}/features/{$first['feature_request_id']}/diff/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$first['feature_request_id']}/apply",
+            "/api/v1/projects/{$project->id}/features/{$first['feature_request_id']}/apply",
             [
                 'applied_paths' => ['app/Models/Wishlist.php'],
                 'before' => ['hash' => str_repeat('a', 40), 'message' => 'before'],
@@ -169,7 +169,7 @@ class FeatureControllerTest extends TestCase
         );
 
         $second = $this->storeFeatureAndGetResult($user, $project, 'Add a wishlist feature so users can save products for later.');
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$second['feature_request_id']}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$second['feature_request_id']}");
 
         $show->assertOk()->assertJsonPath('change_set.duplicate_warning.type', 'similar_prior_request');
         $this->assertSame($first['feature_request_id'], $show->json('change_set.duplicate_warning.feature_request_id'));
@@ -203,13 +203,13 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['database/migrations/2026_01_01_create_widgets_table.php']],
         );
 
         $this->generateAndGetResult($user, $project, $featureRequestId);
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $files = collect($show->json('change_set.files'));
         $this->assertStringContainsString('AUTO_INCREMENT', $files->first()['architecture_warning']);
         $this->assertSame('low', $show->json('change_set.confidence_level'));
@@ -236,13 +236,13 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['database/migrations/2026_01_01_create_widgets_table.php']],
         );
 
         $this->generateAndGetResult($user, $project, $featureRequestId);
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $files = collect($show->json('change_set.files'));
         $this->assertNull($files->first()['architecture_warning']);
     }
@@ -266,7 +266,7 @@ class FeatureControllerTest extends TestCase
         $result = $this->storeFeatureAndGetResult($user, $project, 'risky changes');
         $featureRequestId = $result['feature_request_id'];
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $show->assertOk();
 
         $byPath = collect($show->json('change_set.files'))->keyBy('path');
@@ -294,7 +294,7 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $response = $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
 
@@ -339,7 +339,7 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php', 'app/Http/Controllers/WishlistController.php']],
         );
 
@@ -364,7 +364,7 @@ class FeatureControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/features")
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/features")
             ->assertForbidden();
     }
 
@@ -386,14 +386,14 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
 
         $this->generateAndGetResult($user, $project, $featureRequestId);
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/diff/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/diff/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         )->assertOk();
 
@@ -404,7 +404,7 @@ class FeatureControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/apply",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/apply",
             [
                 'applied_paths' => ['app/Models/Wishlist.php'],
                 'before' => ['hash' => str_repeat('a', 40), 'message' => 'DevPlan before: wishlist'],
@@ -429,7 +429,7 @@ class FeatureControllerTest extends TestCase
             'message' => 'DevPlan feat: wishlist',
         ]);
 
-        $checkpoints = $this->actingAs($user)->getJson("/api/projects/{$project->id}/checkpoints");
+        $checkpoints = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/checkpoints");
         $checkpoints->assertOk()->assertJsonCount(2);
     }
 
@@ -449,17 +449,17 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
         $this->generateAndGetResult($user, $project, $featureRequestId);
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/diff/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/diff/approve",
             ['approved_paths' => ['app/Models/Wishlist.php']],
         );
 
         $response = $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/apply",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/apply",
             [
                 'applied_paths' => ['app/Models/Wishlist.php'],
                 'before' => ['hash' => 'not-a-hash; rm -rf /', 'message' => 'x'],
@@ -485,7 +485,7 @@ class FeatureControllerTest extends TestCase
         $project->files()->create(['path' => 'README.md', 'language' => 'markdown', 'content_hash' => 'x']);
 
         $result = $this->storeFeatureAndGetResult($user, $project, 'Add a wishlist feature.');
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$result['feature_request_id']}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$result['feature_request_id']}");
 
         $paths = collect($show->json('change_set.files'))->pluck('path');
         $this->assertTrue($paths->contains('README.md'));
@@ -524,7 +524,7 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Wishlist.php', 'README.md']],
         );
 
@@ -566,12 +566,12 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Services/PaymentService.php']],
         );
         $this->generateAndGetResult($user, $project, $featureRequestId);
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $file = collect($show->json('change_set.files'))->first();
 
         $this->assertSame('high', $file['risk_level']);
@@ -595,12 +595,12 @@ class FeatureControllerTest extends TestCase
         $featureRequestId = $result['feature_request_id'];
 
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$featureRequestId}/plan/approve",
             ['approved_paths' => ['app/Models/Widget.php']],
         );
         $this->generateAndGetResult($user, $project, $featureRequestId);
 
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$featureRequestId}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$featureRequestId}");
         $file = collect($show->json('change_set.files'))->first();
 
         $this->assertNull($file['security_findings']);
@@ -631,7 +631,7 @@ class FeatureControllerTest extends TestCase
 
         $first = $this->storeFeatureAndGetResult($user, $project, 'Add a widget model.');
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$first['feature_request_id']}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$first['feature_request_id']}/plan/approve",
             ['approved_paths' => ['app/Models/Widget.php']],
         );
         $this->generateAndGetResult($user, $project, $first['feature_request_id']);
@@ -639,12 +639,12 @@ class FeatureControllerTest extends TestCase
         // "in flight" when the second request plans against the same path.
 
         $second = $this->storeFeatureAndGetResult($user, $project, 'Also change the widget model.');
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$second['feature_request_id']}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$second['feature_request_id']}");
         $file = collect($show->json('change_set.files'))->first();
 
         $this->assertSame($first['feature_request_id'], $file['conflict_warning']['feature_request_id']);
 
-        $firstShow = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$first['feature_request_id']}");
+        $firstShow = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$first['feature_request_id']}");
         $firstFile = collect($firstShow->json('change_set.files'))->first();
         $this->assertSame(hash('sha256', ''), $firstFile['base_content_hash']);
     }
@@ -661,7 +661,7 @@ class FeatureControllerTest extends TestCase
         $project = $this->projectFor($user);
 
         $result = $this->storeFeatureAndGetResult($user, $project, 'Add a widget model.');
-        $show = $this->actingAs($user)->getJson("/api/projects/{$project->id}/features/{$result['feature_request_id']}");
+        $show = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/features/{$result['feature_request_id']}");
         $file = collect($show->json('change_set.files'))->first();
 
         $this->assertNull($file['conflict_warning']);
@@ -700,7 +700,7 @@ class FeatureControllerTest extends TestCase
 
         $result = $this->storeFeatureAndGetResult($user, $project, 'Add an order model.');
         $this->actingAs($user)->postJson(
-            "/api/projects/{$project->id}/features/{$result['feature_request_id']}/plan/approve",
+            "/api/v1/projects/{$project->id}/features/{$result['feature_request_id']}/plan/approve",
             ['approved_paths' => ['app/Models/Order.php']],
         );
         $this->generateAndGetResult($user, $project, $result['feature_request_id']);

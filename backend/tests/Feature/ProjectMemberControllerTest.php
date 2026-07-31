@@ -33,27 +33,27 @@ class ProjectMemberControllerTest extends TestCase
     {
         ['memberA' => $memberA, 'project' => $project] = $this->scenario();
 
-        $this->actingAs($memberA)->getJson("/api/projects/{$project->id}")->assertOk();
+        $this->actingAs($memberA)->getJson("/api/v1/projects/{$project->id}")->assertOk();
     }
 
     public function test_once_restricted_a_non_listed_developer_loses_access_but_the_owner_keeps_it(): void
     {
         ['owner' => $owner, 'memberA' => $memberA, 'memberB' => $memberB, 'project' => $project] = $this->scenario();
 
-        $this->actingAs($owner)->postJson("/api/projects/{$project->id}/members", [
+        $this->actingAs($owner)->postJson("/api/v1/projects/{$project->id}/members", [
             'user_id' => $memberA->id,
         ])->assertCreated();
 
-        $this->actingAs($memberA)->getJson("/api/projects/{$project->id}")->assertOk();
-        $this->actingAs($memberB)->getJson("/api/projects/{$project->id}")->assertForbidden();
-        $this->actingAs($owner)->getJson("/api/projects/{$project->id}")->assertOk();
+        $this->actingAs($memberA)->getJson("/api/v1/projects/{$project->id}")->assertOk();
+        $this->actingAs($memberB)->getJson("/api/v1/projects/{$project->id}")->assertForbidden();
+        $this->actingAs($owner)->getJson("/api/v1/projects/{$project->id}")->assertOk();
     }
 
     public function test_a_project_override_cannot_exceed_the_users_team_role(): void
     {
         ['owner' => $owner, 'memberA' => $memberA, 'project' => $project] = $this->scenario();
 
-        $this->actingAs($owner)->postJson("/api/projects/{$project->id}/members", [
+        $this->actingAs($owner)->postJson("/api/v1/projects/{$project->id}/members", [
             'user_id' => $memberA->id,
             'role' => 'owner',
         ])->assertStatus(422);
@@ -63,7 +63,7 @@ class ProjectMemberControllerTest extends TestCase
     {
         ['memberA' => $memberA, 'memberB' => $memberB, 'project' => $project] = $this->scenario();
 
-        $this->actingAs($memberA)->postJson("/api/projects/{$project->id}/members", [
+        $this->actingAs($memberA)->postJson("/api/v1/projects/{$project->id}/members", [
             'user_id' => $memberB->id,
         ])->assertForbidden();
     }

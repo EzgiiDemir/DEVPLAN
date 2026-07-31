@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Share2, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 const ROLES = ["viewer", "developer", "admin", "owner"];
 
 export function ProjectSharingModal({ projectId, teamId, onClose }) {
   const t = useTranslations("StudioSharing");
   const tRole = useTranslations("Teams.roleLabel");
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, onClose);
 
   const [teamMembers, setTeamMembers] = useState(null);
   const [overrides, setOverrides] = useState(null);
@@ -74,13 +77,20 @@ export function ProjectSharingModal({ projectId, teamId, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-dp-editor-bg text-dp-editor-text rounded-xl border border-dp-editor-border w-full max-w-md max-h-[85vh] overflow-y-auto flex flex-col">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-sharing-title"
+        tabIndex={-1}
+        className="bg-dp-editor-bg text-dp-editor-text rounded-xl border border-dp-editor-border w-full max-w-md max-h-[85vh] overflow-y-auto flex flex-col outline-none"
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-dp-editor-border">
-          <span className="flex items-center gap-2 text-sm font-semibold">
+          <span id="project-sharing-title" className="flex items-center gap-2 text-sm font-semibold">
             <Share2 size={15} className="text-dp-accent" />
             {t("heading")}
           </span>
-          <button type="button" onClick={onClose} className="text-dp-editor-muted hover:text-dp-editor-text">
+          <button type="button" onClick={onClose} aria-label={t("close")} className="text-dp-editor-muted hover:text-dp-editor-text">
             <X size={16} />
           </button>
         </div>

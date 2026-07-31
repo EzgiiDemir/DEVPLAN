@@ -50,7 +50,29 @@ return [
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL', 'http://localhost:8010').'/api/oauth/github/callback'),
+        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL', 'http://localhost:8010').'/api/v1/oauth/github/callback'),
+    ],
+
+    // A single, globally-configured OpenID Connect app (Okta, Azure AD/Entra
+    // ID, Auth0, or any standards-compliant IdP) — the enterprise-SSO
+    // equivalent of the github block above. `issuer` is the IdP's base URL;
+    // OidcService fetches `{issuer}/.well-known/openid-configuration` from it
+    // rather than hardcoding per-provider endpoints.
+    'oidc' => [
+        'client_id' => env('OIDC_CLIENT_ID'),
+        'client_secret' => env('OIDC_CLIENT_SECRET'),
+        'issuer' => env('OIDC_ISSUER'),
+        'redirect' => env('OIDC_REDIRECT_URI', env('APP_URL', 'http://localhost:8010').'/api/v1/oauth/oidc/callback'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'prices' => [
+            'pro' => env('STRIPE_PRICE_PRO'),
+            'team' => env('STRIPE_PRICE_TEAM'),
+        ],
     ],
 
 ];

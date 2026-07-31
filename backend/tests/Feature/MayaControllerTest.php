@@ -14,7 +14,7 @@ class MayaControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Maya Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Maya Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -29,10 +29,10 @@ class MayaControllerTest extends TestCase
      */
     private function sendMayaMessageAndGetResult(User $user, Project $project, array $body): array
     {
-        $store = $this->actingAs($user)->postJson("/api/projects/{$project->id}/maya/messages", $body);
+        $store = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/maya/messages", $body);
         $store->assertStatus(202);
 
-        $job = $this->actingAs($user)->getJson("/api/ai-jobs/{$store->json('job_id')}");
+        $job = $this->actingAs($user)->getJson("/api/v1/ai-jobs/{$store->json('job_id')}");
         $job->assertOk()->assertJsonPath('status', 'succeeded');
 
         return $job->json('result');
@@ -50,7 +50,7 @@ class MayaControllerTest extends TestCase
 
         $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'Hey, what can you help me with?']);
 
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/maya/messages");
         $history->assertOk();
         $messages = $history->json();
         $this->assertSame('user', $messages[0]['role']);
@@ -190,7 +190,7 @@ class MayaControllerTest extends TestCase
         // The assistant message itself must carry the hydrated plan inline —
         // this is what lets a FeatureCard render without a second round-trip
         // after a page reload via index().
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/maya/messages");
         $historyAssistant = collect($history->json())->firstWhere('role', 'assistant');
         $this->assertSame('feature_request', $historyAssistant['intent']);
         $this->assertNotNull($historyAssistant['feature_request_id']);
@@ -214,7 +214,7 @@ class MayaControllerTest extends TestCase
 
         $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'Can you clean up the Widget component?']);
 
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/maya/messages");
         $assistantMessage = collect($history->json())->firstWhere('role', 'assistant');
         $this->assertSame('refactor', $assistantMessage['intent']);
         $this->assertNotNull($assistantMessage['feature_request_id']);
@@ -236,7 +236,7 @@ class MayaControllerTest extends TestCase
         $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'first']);
         $this->sendMayaMessageAndGetResult($user, $project, ['message' => 'second']);
 
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/maya/messages");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/maya/messages");
         $history->assertOk();
         $contents = collect($history->json())->pluck('content');
         $this->assertSame(['first', 'ok', 'second', 'ok'], $contents->all());
@@ -248,7 +248,7 @@ class MayaControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/maya/messages")->assertForbidden();
-        $this->actingAs($intruder)->postJson("/api/projects/{$project->id}/maya/messages", ['message' => 'x'])->assertForbidden();
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/maya/messages")->assertForbidden();
+        $this->actingAs($intruder)->postJson("/api/v1/projects/{$project->id}/maya/messages", ['message' => 'x'])->assertForbidden();
     }
 }

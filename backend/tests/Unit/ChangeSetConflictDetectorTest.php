@@ -14,7 +14,7 @@ class ChangeSetConflictDetectorTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Conflict Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Conflict Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -89,6 +89,10 @@ class ChangeSetConflictDetectorTest extends TestCase
     public function test_a_conflict_in_a_different_project_is_ignored(): void
     {
         $user = User::factory()->create();
+        // Two projects for the same user needs a paid plan now that project
+        // creation is plan-gated (Free is capped at 1) — unrelated to what
+        // this test is actually checking, just a fixture requirement.
+        $user->subscriptions()->create(['plan' => 'pro']);
         $projectA = $this->projectFor($user);
         $projectB = $this->projectFor($user);
 

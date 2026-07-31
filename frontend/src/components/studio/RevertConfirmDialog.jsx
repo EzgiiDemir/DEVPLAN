@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
+
 export function RevertConfirmDialog({
   title,
   diffStat,
@@ -12,10 +15,22 @@ export function RevertConfirmDialog({
   confirmLabel,
   cancelLabel,
 }) {
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, () => {
+    if (!confirming) onCancel();
+  });
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-dp-editor-bg text-dp-editor-text rounded-xl border border-dp-editor-border w-full max-w-md max-h-[85vh] overflow-y-auto flex flex-col p-4 gap-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
+      <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="revert-confirm-title"
+        tabIndex={-1}
+        className="bg-dp-editor-bg text-dp-editor-text rounded-xl border border-dp-editor-border w-full max-w-md max-h-[85vh] overflow-y-auto flex flex-col p-4 gap-3 outline-none"
+      >
+        <h3 id="revert-confirm-title" className="text-sm font-semibold">{title}</h3>
         {dirty && <p className="text-[12px] text-amber-500">{stashNotice}</p>}
         <pre className="text-[11px] font-mono whitespace-pre-wrap text-dp-editor-muted bg-dp-editor-overlay rounded-lg p-2.5 max-h-56 overflow-y-auto">
           {diffStat || noDiffLabel}

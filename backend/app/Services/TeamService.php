@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\TeamInvitationNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -63,6 +64,12 @@ class TeamService
         // rather than a real inbox — the invitation record + shareable link
         // (built from the token) are the actual source of truth either way.
         Mail::to($email)->send(new TeamInvitationMail($invitation->load(['team', 'invitedBy'])));
+
+        // An invitee who already has a DevPlan account gets an in-app
+        // notification too — far more likely to be seen than an email, the
+        // next time they're already using the product.
+        $existingUser = User::where('email', $email)->first();
+        $existingUser?->notify(new TeamInvitationNotification($team, $inviter, $role));
 
         $this->audit->record($inviter, 'team.member_invited', ['email' => $email, 'role' => $role], team: $team);
 

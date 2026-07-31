@@ -6,6 +6,8 @@ import { Info, Mail, LayoutGrid, Sparkles, TerminalSquare, Users, Settings, Shie
 import { Link, usePathname } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const LINKS = [
   { href: "/dashboard", key: "modules", Icon: LayoutGrid },
@@ -66,17 +68,23 @@ export function AppNav() {
           >
             <Settings size={16} strokeWidth={1.8} />
           </Link>
+          <GlobalSearch />
+          <NotificationBell />
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
 
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="lg:hidden w-9 h-9 rounded-full flex items-center justify-center text-dp-muted hover:text-dp-ink hover:bg-dp-faint transition-colors"
-          aria-label={t("menuToggle")}
-        >
-          {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="lg:hidden flex items-center gap-1">
+          <GlobalSearch />
+          <NotificationBell />
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-dp-muted hover:text-dp-ink hover:bg-dp-faint transition-colors"
+            aria-label={t("menuToggle")}
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </div>
 
       {open && (

@@ -30,11 +30,11 @@ class TaskControllerTest extends TestCase
     {
         ['developer' => $developer, 'project' => $project] = $this->scenario();
 
-        $create = $this->actingAs($developer)->postJson("/api/projects/{$project->id}/tasks", ['title' => 'Build the thing']);
+        $create = $this->actingAs($developer)->postJson("/api/v1/projects/{$project->id}/tasks", ['title' => 'Build the thing']);
         $create->assertCreated()->assertJsonPath('status', 'todo');
         $taskId = $create->json('id');
 
-        $update = $this->actingAs($developer)->patchJson("/api/projects/{$project->id}/tasks/{$taskId}", [
+        $update = $this->actingAs($developer)->patchJson("/api/v1/projects/{$project->id}/tasks/{$taskId}", [
             'status' => 'doing',
             'assigned_to_user_id' => $developer->id,
         ]);
@@ -46,7 +46,7 @@ class TaskControllerTest extends TestCase
         ['developer' => $developer, 'project' => $project] = $this->scenario();
         $outsider = User::factory()->create();
 
-        $this->actingAs($developer)->postJson("/api/projects/{$project->id}/tasks", [
+        $this->actingAs($developer)->postJson("/api/v1/projects/{$project->id}/tasks", [
             'title' => 'Build the thing',
             'assigned_to_user_id' => $outsider->id,
         ])->assertStatus(422);
@@ -56,9 +56,9 @@ class TaskControllerTest extends TestCase
     {
         ['developer' => $developer, 'viewer' => $viewer, 'project' => $project] = $this->scenario();
 
-        $this->actingAs($developer)->postJson("/api/projects/{$project->id}/tasks", ['title' => 'Task 1']);
+        $this->actingAs($developer)->postJson("/api/v1/projects/{$project->id}/tasks", ['title' => 'Task 1']);
 
-        $this->actingAs($viewer)->getJson("/api/projects/{$project->id}/tasks")->assertOk()->assertJsonCount(1);
-        $this->actingAs($viewer)->postJson("/api/projects/{$project->id}/tasks", ['title' => 'Task 2'])->assertForbidden();
+        $this->actingAs($viewer)->getJson("/api/v1/projects/{$project->id}/tasks")->assertOk()->assertJsonCount(1);
+        $this->actingAs($viewer)->postJson("/api/v1/projects/{$project->id}/tasks", ['title' => 'Task 2'])->assertForbidden();
     }
 }

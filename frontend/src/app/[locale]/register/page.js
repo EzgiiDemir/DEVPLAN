@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Building2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
@@ -11,6 +12,11 @@ import { GithubIcon } from "@/components/icons/GithubIcon";
 
 async function startGithubLogin() {
   const result = await apiFetch("/oauth/github/redirect");
+  window.location.href = result.url;
+}
+
+async function startOidcLogin() {
+  const result = await apiFetch("/oauth/oidc/redirect");
   window.location.href = result.url;
 }
 
@@ -97,6 +103,14 @@ export default function RegisterPage() {
           className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
         >
           <GithubIcon size={16} /> {t("githubButton")}
+        </button>
+
+        <button
+          type="button"
+          onClick={startOidcLogin}
+          className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 mt-2 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
+        >
+          <Building2 size={16} /> {t("ssoButton")}
         </button>
 
         <p className="text-sm text-dp-muted mt-6 pt-6 border-t border-dp-faint text-center">

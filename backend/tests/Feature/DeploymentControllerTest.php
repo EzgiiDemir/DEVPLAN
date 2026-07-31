@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Notifications\DeploymentFinishedNotification;
 use App\Services\AiTextGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class DeploymentControllerTest extends TestCase
@@ -16,7 +18,7 @@ class DeploymentControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Deploy Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Deploy Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -41,7 +43,7 @@ class DeploymentControllerTest extends TestCase
         $project = $this->projectFor($user);
         $this->seedEnvExample($project, "DATABASE_URL=\nAPI_SECRET_KEY=\n# a comment, not a var\nPORT=3000\n");
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/analyze", [
             'platform' => 'vercel',
             'has_vercel_json' => false,
         ]);
@@ -67,7 +69,7 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/analyze", [
             'platform' => 'railway',
             'has_railway_json' => true,
         ]);
@@ -84,7 +86,7 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/analyze", [
             'platform' => 'docker',
             'has_dockerfile' => true,
         ]);
@@ -103,7 +105,7 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/analyze", [
             'platform' => 'render',
         ]);
 
@@ -117,7 +119,7 @@ class DeploymentControllerTest extends TestCase
         $project = $this->projectFor($owner);
 
         $this->actingAs($intruder)
-            ->postJson("/api/projects/{$project->id}/deployments/analyze", ['platform' => 'vercel'])
+            ->postJson("/api/v1/projects/{$project->id}/deployments/analyze", ['platform' => 'vercel'])
             ->assertForbidden();
     }
 
@@ -132,7 +134,7 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/generate-config", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/generate-config", [
             'path' => 'vercel.json',
             'platform' => 'vercel',
         ]);
@@ -150,18 +152,18 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", [
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", [
             'platform' => 'vercel',
         ]);
         $started->assertCreated()->assertJsonPath('status', 'preparing');
         $deploymentId = $started->json('id');
 
-        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'building',
             'log_output' => 'Running build...',
         ])->assertOk()->assertJsonPath('status', 'building');
 
-        $finished = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $finished = $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'success',
             'git_commit_hash' => str_repeat('a', 40),
             'live_url' => 'https://my-app.vercel.app',
@@ -179,7 +181,7 @@ class DeploymentControllerTest extends TestCase
             'message' => 'Deployed to vercel',
         ]);
 
-        $history = $this->actingAs($user)->getJson("/api/projects/{$project->id}/deployments");
+        $history = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/deployments");
         $history->assertOk()->assertJsonCount(1);
         $this->assertNotNull($history->json()[0]['checkpoint']);
     }
@@ -189,10 +191,10 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'railway']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'railway']);
         $deploymentId = $started->json('id');
 
-        $finished = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $finished = $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'failed',
             'error_message' => 'Build failed: missing dependency.',
             'log_output' => 'npm ERR! missing dependency',
@@ -208,8 +210,8 @@ class DeploymentControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/deployments")->assertForbidden();
-        $this->actingAs($intruder)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel'])->assertForbidden();
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/deployments")->assertForbidden();
+        $this->actingAs($intruder)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel'])->assertForbidden();
     }
 
     /**
@@ -232,7 +234,7 @@ class DeploymentControllerTest extends TestCase
             'content_hash' => 'x',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/analyze", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/analyze", [
             'platform' => 'railway',
             'has_railway_json' => true,
         ]);
@@ -248,14 +250,14 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
-        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'success',
             'live_url' => 'https://my-app.vercel.app',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check");
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}/health-check");
 
         $response->assertOk()->assertJsonPath('health_status', 'healthy');
         $this->assertNotNull($response->json('last_health_checked_at'));
@@ -268,14 +270,14 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
-        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'success',
             'live_url' => 'https://my-app.vercel.app',
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check");
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}/health-check");
 
         $response->assertOk()->assertJsonPath('health_status', 'unhealthy');
     }
@@ -286,11 +288,11 @@ class DeploymentControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $started = $this->actingAs($owner)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($owner)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
 
         $this->actingAs($intruder)
-            ->postJson("/api/projects/{$project->id}/deployments/{$deploymentId}/health-check")
+            ->postJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}/health-check")
             ->assertForbidden();
     }
 
@@ -299,10 +301,10 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
 
-        $response = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $response = $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'building',
             'log_output' => "Logging in...\nAPI_KEY=sk_live_abcdefgh12345678\nBuild started.",
         ]);
@@ -318,16 +320,16 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
 
-        $building = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $building = $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'building',
             'companion_process_id' => '42',
         ]);
         $building->assertOk()->assertJsonPath('companion_process_id', '42');
 
-        $finished = $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $finished = $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'success',
         ]);
         $finished->assertOk()->assertJsonPath('companion_process_id', null);
@@ -346,10 +348,10 @@ class DeploymentControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $started = $this->actingAs($user)->postJson("/api/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
         $deploymentId = $started->json('id');
 
-        $this->actingAs($user)->patchJson("/api/projects/{$project->id}/deployments/{$deploymentId}", [
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$deploymentId}", [
             'status' => 'success',
             'live_url' => 'https://my-app.vercel.app',
         ]);
@@ -361,5 +363,43 @@ class DeploymentControllerTest extends TestCase
         Log::shouldHaveReceived('info')
             ->withArgs(fn ($message, $context) => $message === 'deployment.status_changed' && $context['status'] === 'success')
             ->once();
+    }
+
+    /**
+     * Covers the notification system: a deployment that finishes (success
+     * or failure) notifies whoever triggered it — a real deployment runs
+     * for real minutes via a background Companion process, and a user who
+     * navigated away previously had no way to find out it was done.
+     */
+    public function test_a_successful_deployment_notifies_the_user_who_started_it(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'vercel']);
+
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$started->json('id')}", [
+            'status' => 'success',
+            'live_url' => 'https://my-app.vercel.app',
+        ]);
+
+        Notification::assertSentTo($user, DeploymentFinishedNotification::class, fn ($n, $channels) => true);
+    }
+
+    public function test_a_failed_deployment_also_notifies_the_user(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $project = $this->projectFor($user);
+        $started = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/deployments", ['platform' => 'railway']);
+
+        $this->actingAs($user)->patchJson("/api/v1/projects/{$project->id}/deployments/{$started->json('id')}", [
+            'status' => 'failed',
+            'error_message' => 'Build failed.',
+        ]);
+
+        Notification::assertSentTo($user, DeploymentFinishedNotification::class);
     }
 }

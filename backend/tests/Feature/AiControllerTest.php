@@ -14,7 +14,7 @@ class AiControllerTest extends TestCase
 
     private function moduleIdFor($user, string $moduleType): int
     {
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'AI Test Project']);
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'AI Test Project']);
         $modules = collect($project->json('modules'));
 
         return $modules->firstWhere('module_type', $moduleType)['id'];
@@ -28,7 +28,7 @@ class AiControllerTest extends TestCase
 
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/api/ai/pitch', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ai/pitch', [
             'canvas' => ['problem' => ['X'], 'solution' => ['Y'], 'customer' => ['Z']],
             'tone' => 'short',
             'locale' => 'en',
@@ -50,7 +50,7 @@ class AiControllerTest extends TestCase
         $user = User::factory()->create();
         $moduleId = $this->moduleIdFor($user, 'requirements');
 
-        $response = $this->actingAs($user)->postJson('/api/ai/user-stories', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ai/user-stories', [
             'module_id' => $moduleId,
             'features' => ['Login'],
             'locale' => 'en',
@@ -70,7 +70,7 @@ class AiControllerTest extends TestCase
         $user = User::factory()->create();
         $moduleId = $this->moduleIdFor($user, 'requirements');
 
-        $response = $this->actingAs($user)->postJson('/api/ai/user-stories', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ai/user-stories', [
             'module_id' => $moduleId,
             'features' => ['Login'],
             'locale' => 'en',
@@ -88,7 +88,7 @@ class AiControllerTest extends TestCase
         $user = User::factory()->create();
         $moduleId = $this->moduleIdFor($user, 'requirements');
 
-        $response = $this->actingAs($user)->postJson('/api/ai/user-stories', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ai/user-stories', [
             'module_id' => $moduleId,
             'features' => ['Login'],
             'locale' => 'en',
@@ -103,7 +103,7 @@ class AiControllerTest extends TestCase
         $intruder = User::factory()->create();
         $moduleId = $this->moduleIdFor($owner, 'requirements');
 
-        $response = $this->actingAs($intruder)->postJson('/api/ai/user-stories', [
+        $response = $this->actingAs($intruder)->postJson('/api/v1/ai/user-stories', [
             'module_id' => $moduleId,
             'features' => ['Login'],
             'locale' => 'en',
@@ -115,12 +115,12 @@ class AiControllerTest extends TestCase
     public function test_mvp_recommendation_picks_up_requirement_story_context(): void
     {
         $user = User::factory()->create();
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Context Test']);
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Context Test']);
         $modules = collect($project->json('modules'));
         $requirementsId = $modules->firstWhere('module_type', 'requirements')['id'];
         $mvpId = $modules->firstWhere('module_type', 'mvp_scope')['id'];
 
-        $this->actingAs($user)->postJson("/api/modules/{$requirementsId}/items", [
+        $this->actingAs($user)->postJson("/api/v1/modules/{$requirementsId}/items", [
             'item_type' => 'requirement',
             'content' => ['feature' => 'Login', 'story' => 'As a user, I want to log in.', 'priority' => 'must'],
         ]);
@@ -136,7 +136,7 @@ class AiControllerTest extends TestCase
                 ]));
         });
 
-        $response = $this->actingAs($user)->postJson('/api/ai/mvp-recommendation', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ai/mvp-recommendation', [
             'module_id' => $mvpId,
             'features' => ['Login'],
             'locale' => 'en',

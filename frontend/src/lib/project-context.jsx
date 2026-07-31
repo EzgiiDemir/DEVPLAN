@@ -72,6 +72,19 @@ export function ProjectProvider({ children }) {
     }
   }
 
+  async function createDemoProject() {
+    try {
+      const created = await apiFetch("/projects/demo", { method: "POST" });
+      setProjects((list) => [created, ...list]);
+      setProject(created);
+      localStorage.setItem(ACTIVE_PROJECT_KEY, String(created.id));
+      return created;
+    } catch (err) {
+      if (err.status === 401) clearSession();
+      throw err;
+    }
+  }
+
   async function switchProject(projectId) {
     if (projectId === project?.id) return project;
     try {
@@ -133,6 +146,7 @@ export function ProjectProvider({ children }) {
         canAct,
         canManage,
         createProject,
+        createDemoProject,
         switchProject,
         updateProject,
         updateModuleStatus,

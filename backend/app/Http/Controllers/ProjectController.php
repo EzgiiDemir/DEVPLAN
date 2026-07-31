@@ -6,6 +6,8 @@ use App\Models\Project;
 use App\Models\Team;
 use App\Policies\ProjectPolicy;
 use App\Services\AuditLogService;
+use App\Services\DemoProjectSeeder;
+use App\Services\PlanLimits;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +24,18 @@ class ProjectController extends Controller
         private TeamService $teams,
         private ProjectPolicy $policy,
         private AuditLogService $audit,
+        private PlanLimits $planLimits,
+        private DemoProjectSeeder $demoSeeder,
     ) {}
 
     public function index(Request $request)
     {
         $teamIds = $request->user()->teams()->pluck('teams.id');
 
-        return Project::whereIn('team_id', $teamIds)->with('team')->latest()->get()
-            ->map(fn (Project $project) => $this->withRole($request, $project));
+        $projects = Project::whereIn('team_id', $teamIds)->with('team')->latest()->get();
+        $roles = $this->policy->rolesFor($request->user(), $projects);
+
+        return $projects->each(fn (Project $project) => $project->setAttribute('my_role', $roles[$project->id] ?? null));
     }
 
     public function store(Request $request)
@@ -40,6 +46,12 @@ class ProjectController extends Controller
             'team_id' => ['sometimes', 'nullable', 'integer', 'exists:teams,id'],
         ]);
 
+        abort_unless(
+            $this->planLimits->canCreateProject($request->user()),
+            403,
+            'Your plan is limited to 1 project. Upgrade to Pro or Team for unlimited projects.',
+        );
+
         if (! empty($data['team_id'])) {
             $team = Team::findOrFail($data['team_id']);
             $role = $team->members()->where('user_id', $request->user()->id)->value('role');
@@ -48,10 +60,42 @@ class ProjectController extends Controller
             $team = $this->teams->ensurePersonalTeam($request->user());
         }
 
-        $project = DB::transaction(function () use ($request, $data, $team) {
+        $project = $this->createProjectWithModules($request, $data['title'], $data['description'] ?? null, $team);
+
+        return response()->json($project->load('modules'), 201);
+    }
+
+    /**
+     * A one-click, pre-filled project (realistic module content + a few
+     * already-"indexed" files) for a brand-new user to explore Studio/Maya/
+     * Project Brain immediately, instead of starting from 12 empty modules.
+     * Same plan/team rules as a normal project — it counts against the same
+     * project-count limit, not a free extra.
+     */
+    public function demo(Request $request)
+    {
+        abort_unless(
+            $this->planLimits->canCreateProject($request->user()),
+            403,
+            'Your plan is limited to 1 project. Upgrade to Pro or Team for unlimited projects.',
+        );
+
+        $team = $this->teams->ensurePersonalTeam($request->user());
+        $project = $this->createProjectWithModules($request, 'Task Tracker (Demo)', 'A demo project to explore DevPlan Studio.', $team);
+
+        $this->demoSeeder->seed($project);
+
+        $this->audit->record($request->user(), 'project.demo_created', [], project: $project);
+
+        return response()->json($project->fresh()->load('modules.items'), 201);
+    }
+
+    private function createProjectWithModules(Request $request, string $title, ?string $description, Team $team): Project
+    {
+        return DB::transaction(function () use ($request, $title, $description, $team) {
             $project = $request->user()->projects()->create([
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
+                'title' => $title,
+                'description' => $description,
                 'team_id' => $team->id,
             ]);
 
@@ -65,8 +109,6 @@ class ProjectController extends Controller
 
             return $project;
         });
-
-        return response()->json($project->load('modules'), 201);
     }
 
     public function show(Request $request, Project $project)

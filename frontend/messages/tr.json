@@ -28,9 +28,11 @@
       "genericError": "Giriş başarısız.",
       "orDivider": "ya da",
       "githubButton": "GitHub ile devam et",
+      "ssoButton": "Kurumsal SSO ile devam et",
       "mfaHeading": "Kimlik doğrulama kodunu gir",
       "mfaCodeLabel": "6 haneli kod ya da bir kurtarma kodu",
-      "mfaSubmit": "Doğrula"
+      "mfaSubmit": "Doğrula",
+      "forgotPasswordLink": "Şifreni mi unuttun?"
     },
     "register": {
       "heading": "DevPlan'a kayıt ol",
@@ -44,7 +46,37 @@
       "loginLink": "Giriş yap",
       "genericError": "Kayıt başarısız.",
       "orDivider": "ya da",
-      "githubButton": "GitHub ile devam et"
+      "githubButton": "GitHub ile devam et",
+      "ssoButton": "Kurumsal SSO ile devam et"
+    },
+    "forgotPassword": {
+      "heading": "Şifreni sıfırla",
+      "subheading": "Sana geri dönmen için bir bağlantı e-posta ile göndereceğiz.",
+      "email": "E-posta",
+      "submit": "Sıfırlama bağlantısı gönder",
+      "submitting": "Gönderiliyor...",
+      "sentMessage": "Bu e-posta için bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.",
+      "genericError": "Bir şeyler ters gitti. Tekrar dene.",
+      "backToLogin": "Girişe dön"
+    },
+    "resetPassword": {
+      "heading": "Yeni bir şifre seç",
+      "subheading": "Yeni şifreni aşağıya gir.",
+      "newPassword": "Yeni şifre (en az 8 karakter)",
+      "confirmPassword": "Yeni şifreyi onayla",
+      "submit": "Şifreyi sıfırla",
+      "submitting": "Sıfırlanıyor...",
+      "missingToken": "Bu sıfırlama bağlantısı eksik ya da geçersiz. Yenisini iste.",
+      "genericError": "Bu sıfırlama bağlantısı geçersiz ya da süresi dolmuş.",
+      "backToLogin": "Girişe dön"
+    },
+    "verifyEmail": {
+      "heading": "E-postan doğrulanıyor",
+      "verifying": "E-posta adresin onaylanıyor...",
+      "success": "E-posta adresin doğrulandı.",
+      "missingParams": "Bu doğrulama bağlantısı eksik görünüyor.",
+      "genericError": "Bu doğrulama bağlantısı geçersiz ya da süresi dolmuş.",
+      "backToLogin": "Girişe dön"
     }
   },
   "Dashboard": {
@@ -59,7 +91,10 @@
       "descriptionPlaceholder": "Kısa açıklama (opsiyonel)",
       "submit": "Projeyi oluştur",
       "submitting": "Oluşturuluyor...",
-      "genericError": "Proje oluşturulamadı."
+      "genericError": "Proje oluşturulamadı.",
+      "orDivider": "ya da",
+      "tryDemo": "Bunun yerine bir demo proje dene",
+      "demoLoading": "Demo hazırlanıyor..."
     },
     "switcher": {
       "newProject": "Yeni proje"
@@ -68,15 +103,62 @@
       "heading": "Merhaba {name}, ben Maya.",
       "startBody": "Fikrini planlamaya hazır mısın? Seninle birlikte 12 modülde ilerleyeceğiz.",
       "progressBody": "{pct}% tamamladın. Kaldığın yerden devam edelim mi?",
-      "allDoneBody": "12 modülü de tamamladın! Artık kodlamaya geçmeye hazırsın — Studio'ya bekliyorum.",
+      "allDoneBody": "12 modülü de tamamladın! Kodlamaya başlamadan önce her şeyi birlikte gözden geçirelim.",
       "ctaStart": "Planlamaya Başla",
       "ctaContinue": "Devam Et",
-      "ctaStudio": "Studio'ya Gir"
+      "ctaStudio": "Gözden geçir ve devam et"
+    },
+    "checklist": {
+      "heading": "Başlarken",
+      "items": {
+        "modules": "12 planlama modülünü tamamla",
+        "companion": "Companion'ı bağla ve yerel projeni oluştur",
+        "feature": "Maya ile ilk özelliğini oluştur",
+        "deploy": "Projeni yayına al"
+      }
     }
   },
   "ModulePage": {
     "notFound": "Modül bulunamadı.",
     "placeholder": "Bu modülün etkileşimli arayüzü henüz taşınmadı — sırada. Modül {n}/12 ({id})."
+  },
+  "Welcome": {
+    "heading": "Hoş geldin, {name}",
+    "subheading": "DevPlan fikrini nasıl çalışan koda dönüştürür, işte burada.",
+    "steps": {
+      "modules": {
+        "title": "12 planlama modülü",
+        "body": "Her modülde birkaç soruyu yanıtla, DevPlan seninle birlikte planı, stack'i ve mimariyi taslaklasın."
+      },
+      "maya": {
+        "title": "Maya, AI geliştiricin",
+        "body": "Maya ile sohbet ederek gerçek özellikler üret, hataları düzelt ve kendi kod tabanını anla."
+      },
+      "studio": {
+        "title": "Studio",
+        "body": "Gerçek bir kod editörü, terminal ve canlı önizleme — Companion aracılığıyla kendi makinene bağlı."
+      }
+    },
+    "dismiss": "Kapat",
+    "cta": "Hadi başlayalım",
+    "dismissing": "..."
+  },
+  "Review": {
+    "backToDashboard": "Panele dön",
+    "heading": "Proje incelemesi",
+    "subheading": "Kodlamaya başlamadan önce son bir bakış — planı kontrol et, sonra hızlı bir AI tutarlılık kontrolü çalıştır.",
+    "modulesComplete": "{done}/{total} modül tamamlandı",
+    "sprintCount": "{count} sprint planlandı",
+    "modulesHeading": "12 modülün",
+    "edit": "Düzenle",
+    "validationHeading": "AI tutarlılık kontrolü",
+    "validationBody": "Maya 12 modülün tamamını okuyup gerçek çelişkileri işaretler — örneğin seçtiğin teknoloji yığınının desteklemediği bir gereksinim gibi. Bu tamamen bilgilendirme amaçlıdır; devam etmeni engellemez.",
+    "runValidation": "Tutarlılık kontrolünü çalıştır",
+    "runAgain": "Tekrar çalıştır",
+    "validating": "Çelişkiler kontrol ediliyor…",
+    "validationError": "Kontrol başarısız oldu. Lütfen tekrar deneyin.",
+    "noIssues": "Herhangi bir çelişki bulunamadı.",
+    "continueToStudio": "Studio'ya devam et"
   },
   "Modules": {
     "idea": { "title": "Fikir Doğrulama", "sub": "Problemi ve müşteriyi netleştir, AI pitch'ini üretsin" },
@@ -373,6 +455,13 @@
     "checkingCompanion": "DevPlan Companion aranıyor...",
     "notRunningHeading": "DevPlan Companion çalışmıyor",
     "notRunningBody": "Studio'nun bilgisayarını kontrol edebilmesi, proje klasörü oluşturabilmesi ve komut çalıştırabilmesi için DevPlan Companion uygulamasının açık olması gerekir. Proje deposundaki companion/ klasöründe:",
+    "downloadBody": "DevPlan Companion, Studio'nun kendi bilgisayarınla çalışmasını sağlayan küçük, yerel bir uygulama. İndir, aç, sonra buraya geri dön.",
+    "downloadPlatform": {
+      "win": "Windows için indir",
+      "mac": "macOS için indir",
+      "linux": "Linux için indir"
+    },
+    "runFromSourceSummary": "Geliştiriciyim — bunun yerine kaynak koddan çalıştırayım",
     "recheck": "Tekrar kontrol et",
     "pairHeading": "Bilgisayarını bağla",
     "pairBody": "DevPlan Companion penceresinde görünen 6 haneli kodu gir.",
@@ -436,6 +525,7 @@
   },
   "StudioDeployment": {
     "heading": "Dağıtım Sihirbazı",
+    "close": "Dağıtım sihirbazını kapat",
     "choosePlatform": "Nereye dağıtmak istersin?",
     "platform": {
       "vercel": "Vercel",
@@ -521,7 +611,8 @@
     "remove": "Kaldır",
     "noOtherMembers": "Tüm takım üyelerinin zaten erişimi var, ya da takımda başka kimse yok.",
     "loading": "Yükleniyor…",
-    "error": "Bir şeyler ters gitti."
+    "error": "Bir şeyler ters gitti.",
+    "close": "Paylaşım ayarlarını kapat"
   },
   "StudioTasks": {
     "heading": "Görevler",
@@ -727,6 +818,42 @@
     "security": "Güvenlik",
     "menuToggle": "Menü"
   },
+  "Notifications": {
+    "title": "Bildirimler",
+    "empty": "Yeni bildirim yok.",
+    "markAllRead": "Tümünü okundu işaretle",
+    "viewAll": "Tümünü gör",
+    "mention": "{author}, \"{project}\" içinde senden bahsetti",
+    "teamInvitation": "{inviter} seni {team} takımına {role} olarak davet etti",
+    "deploymentSuccess": "\"{project}\" projesinin {platform} dağıtımı başarılı oldu",
+    "deploymentFailed": "\"{project}\" projesinin {platform} dağıtımı başarısız oldu",
+    "bellLabel": "Bildirimler ({count} okunmamış)"
+  },
+  "Search": {
+    "openLabel": "Ara (Ctrl+K)",
+    "title": "Ara",
+    "placeholder": "Proje, görev, yorum ara…",
+    "hint": "Aramak için en az 2 karakter yazın.",
+    "empty": "Sonuç bulunamadı.",
+    "close": "Kapat",
+    "groups": {
+      "projects": "Projeler",
+      "tasks": "Görevler",
+      "features": "Özellikler",
+      "comments": "Yorumlar",
+      "module_items": "Modül içeriği"
+    }
+  },
+  "DeleteAccountModal": {
+    "title": "Hesabını sil",
+    "warning": "Bu işlem hesabını, kişisel projelerini ve içindeki her şeyi kalıcı olarak siler. Geri alınamaz.",
+    "passwordLabel": "Devam etmek için şifreni onayla",
+    "confirm": "Hesabımı kalıcı olarak sil",
+    "confirming": "Siliniyor…",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "genericError": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+  },
   "About": {
     "kicker": "HAKKIMIZDA",
     "heading": "Fikirden koda giden yolu kısaltıyoruz.",
@@ -782,15 +909,29 @@
     "themeDark": "Koyu",
     "projectsHeading": "Projelerin",
     "projectsEmpty": "Henüz bir projen yok.",
+    "exportProject": "Proje yedeğini indir (.zip)",
+    "exportError": "Dışa aktarma başarısız oldu. Lütfen tekrar deneyin.",
+    "privacyHeading": "Gizlilik ve veri",
+    "privacyBody": "DevPlan'ın hesabınla ilgili tuttuğu her şeyin tam bir kopyasını indir — profilin, takımların, aboneliğin, denetim geçmişin, bildirimlerin ve erişebildiğin her proje.",
+    "privacyExport": "Verilerimi indir (.zip)",
+    "privacyExporting": "Dışa aktarman hazırlanıyor…",
+    "privacyExportError": "Dışa aktarma başarısız oldu. Lütfen tekrar deneyin.",
+    "dangerHeading": "Tehlikeli bölge",
+    "deleteAccount": "Hesabımı sil",
     "billingHeading": "Abonelik",
     "plans": {
       "free": { "name": "Ücretsiz", "price": "0 ₺ / ay", "body": "1 proje, 12 modülün tamamı, temel AI kullanımı." },
       "pro": { "name": "Pro", "price": "249 ₺ / ay", "body": "Sınırsız proje, öncelikli AI yanıtları, Studio'da genişletilmiş dosya alanı." },
       "team": { "name": "Takım", "price": "699 ₺ / ay", "body": "Pro'daki her şey + ekip üyeleriyle paylaşılan projeler." }
     },
+    "verificationNeeded": "Lütfen e-posta adresini doğrula.",
+    "verificationResent": "Doğrulama e-postası gönderildi — gelen kutunu kontrol et.",
+    "resendVerification": "E-postayı tekrar gönder",
     "paymentMethodEmpty": "Kayıtlı ödeme yöntemi yok",
-    "comingSoon": "Yakında",
-    "billingHistoryEmpty": "Henüz bir fatura geçmişin yok.",
+    "manageBilling": "Faturalandırmayı yönet",
+    "billingSuccess": "Abonelik onaylandı — aşağıya yansıması birkaç saniye sürebilir.",
+    "billingCancelled": "Ödeme iptal edildi — planın değişmedi.",
+    "cancelScheduled": "Planın {date} tarihinde Free'e düşecek. Bunu önlemek için yukarıdan bir plan seç.",
     "logout": "Çıkış yap",
     "twoFactorHeading": "İki adımlı doğrulama",
     "twoFactorBody": "Bir kimlik doğrulama uygulaması (Google Authenticator, Authy, 1Password vb.) ile girişe ikinci bir adım ekle.",

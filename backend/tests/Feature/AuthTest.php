@@ -12,7 +12,7 @@ class AuthTest extends TestCase
 
     public function test_can_register(): void
     {
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson('/api/v1/register', [
             'name' => 'Ezgi Demir',
             'email' => 'ezgi@example.com',
             'password' => 'password123',
@@ -27,7 +27,7 @@ class AuthTest extends TestCase
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson('/api/v1/register', [
             'name' => 'Someone Else',
             'email' => 'taken@example.com',
             'password' => 'password123',
@@ -43,7 +43,7 @@ class AuthTest extends TestCase
             'password' => bcrypt('password123'),
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => 'login@example.com',
             'password' => 'password123',
         ]);
@@ -59,7 +59,7 @@ class AuthTest extends TestCase
             'password' => bcrypt('password123'),
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => 'login@example.com',
             'password' => 'wrong-password',
         ]);
@@ -72,7 +72,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/api/logout');
+        $response = $this->actingAs($user)->postJson('/api/v1/logout');
 
         $response->assertNoContent();
         $this->assertDatabaseHas('audit_logs', ['user_id' => $user->id, 'action' => 'auth.logout']);
@@ -82,7 +82,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->getJson('/api/user');
+        $response = $this->actingAs($user)->getJson('/api/v1/user');
 
         $response->assertOk()->assertJsonPath('id', $user->id);
     }

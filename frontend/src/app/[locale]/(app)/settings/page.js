@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Sun, Moon, LogOut, CreditCard, FolderKanban, Check, ShieldCheck, Monitor, Trash2 } from "lucide-react";
+import { Sun, Moon, LogOut, CreditCard, FolderKanban, Check, ShieldCheck, Monitor, Trash2, Download } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useProject } from "@/lib/project-context";
 import { useTheme } from "@/lib/theme-context";
 import { GithubIcon } from "@/components/icons/GithubIcon";
+import { downloadProjectExport, downloadAccountExport } from "@/lib/exportProjectZip";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 
 const PLANS = ["free", "pro", "team"];
 
@@ -326,35 +328,170 @@ function PasswordForm() {
   );
 }
 
+// Defined outside the component, same as startGithubLogin() above in
+// register/page.js — a plain top-level redirect helper rather than a
+// mutation the compiler would otherwise flag inside component scope.
+function redirectTo(url) {
+  window.location.href = url;
+}
+
+function billingResultFromUrl() {
+  if (typeof window === "undefined") return null;
+  const result = new URLSearchParams(window.location.search).get("billing");
+  return result === "success" || result === "cancelled" ? result : null;
+}
+
 export default function SettingsPage() {
   const t = useTranslations("Settings");
-  const { logout, user } = useAuth();
+  const { logout, user, deleteAccount } = useAuth();
   const { project, projects, switchProject } = useProject();
   const { theme, setTheme } = useTheme();
   const [subscription, setSubscription] = useState(null);
   const [planUpdating, setPlanUpdating] = useState(false);
+  const [billingError, setBillingError] = useState(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [exportingProjectId, setExportingProjectId] = useState(null);
+  const [exportError, setExportError] = useState(null);
+  const [exportingAccount, setExportingAccount] = useState(false);
+  const [accountExportError, setAccountExportError] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // Lazy-initialized from the URL on first render, not set from inside an
+  // effect — the Stripe success/cancel redirect lands with ?billing=... in
+  // the URL already, so this is real initial state, not a subscription to
+  // an external system.
+  const [billingNotice] = useState(billingResultFromUrl);
 
   useEffect(() => {
     apiFetch("/subscription").then(setSubscription).catch(() => setSubscription(null));
+
+    if (billingNotice) {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("billing");
+      const rest = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A real Stripe Checkout Session for a paid plan takes a moment to
+  // provision on Stripe's side — poll briefly instead of assuming the
+  // webhook (which is what actually flips `plan`) has already landed by the
+  // time the success redirect completes.
+  useEffect(() => {
+    if (billingNotice !== "success") return;
+    let cancelled = false;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const fresh = await apiFetch("/subscription");
+        if (!cancelled) setSubscription(fresh);
+      } catch {
+        // Best-effort — the manual refresh (reload) still works either way.
+      }
+      if (attempts >= 5) clearInterval(interval);
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [billingNotice]);
+
   async function selectPlan(plan) {
-    if (plan === subscription?.plan) return;
+    if (plan === subscription?.plan && !subscription?.cancel_at_period_end) return;
     setPlanUpdating(true);
+    setBillingError(null);
     try {
-      const updated = await apiFetch("/subscription", {
+      const result = await apiFetch("/subscription", {
         method: "PATCH",
         body: JSON.stringify({ plan }),
       });
-      setSubscription(updated);
+      if (result.checkout_url) {
+        redirectTo(result.checkout_url);
+        return;
+      }
+      setSubscription(result);
+    } catch (err) {
+      setBillingError(err.message);
     } finally {
       setPlanUpdating(false);
     }
   }
 
+  async function openBillingPortal() {
+    setPlanUpdating(true);
+    setBillingError(null);
+    try {
+      const result = await apiFetch("/subscription/billing-portal", { method: "POST" });
+      redirectTo(result.portal_url);
+    } catch (err) {
+      setBillingError(err.message);
+      setPlanUpdating(false);
+    }
+  }
+
+  async function resendVerificationEmail() {
+    setResendingVerification(true);
+    setVerificationSent(false);
+    try {
+      await apiFetch("/email/resend", { method: "POST" });
+      setVerificationSent(true);
+    } finally {
+      setResendingVerification(false);
+    }
+  }
+
+  async function exportProject(projectId) {
+    setExportingProjectId(projectId);
+    setExportError(null);
+    try {
+      await downloadProjectExport(projectId);
+    } catch {
+      setExportError(projectId);
+    } finally {
+      setExportingProjectId(null);
+    }
+  }
+
+  async function exportAccount() {
+    setExportingAccount(true);
+    setAccountExportError(false);
+    try {
+      await downloadAccountExport();
+    } catch {
+      setAccountExportError(true);
+    } finally {
+      setExportingAccount(false);
+    }
+  }
+
+  async function handleDeleteAccount(currentPassword) {
+    await deleteAccount(currentPassword);
+    setShowDeleteModal(false);
+  }
+
   return (
     <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-14">
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-8">{t("heading")}</h1>
+
+      {user && !user.email_verified_at && (
+        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 mb-6">
+          <span className="text-xs text-amber-600 flex-1">
+            {verificationSent ? t("verificationResent") : t("verificationNeeded")}
+          </span>
+          {!verificationSent && (
+            <button
+              type="button"
+              onClick={resendVerificationEmail}
+              disabled={resendingVerification}
+              className="text-xs font-semibold text-amber-600 underline disabled:opacity-50 flex-shrink-0"
+            >
+              {resendingVerification ? t("saving") : t("resendVerification")}
+            </button>
+          )}
+        </div>
+      )}
 
       <SettingsSection title={t("profileHeading")}>
         <ProfileForm />
@@ -402,18 +539,29 @@ export default function SettingsPage() {
         {projects.length > 0 ? (
           <div className="flex flex-col gap-2">
             {projects.map((p) => (
-              <button
+              <div
                 key={p.id}
-                onClick={() => switchProject(p.id)}
-                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
+                className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
                   p.id === project?.id ? "bg-dp-faint" : "hover:bg-dp-faint"
                 }`}
               >
-                <FolderKanban size={16} className="text-dp-muted-2 flex-shrink-0" />
-                <span className="text-sm font-medium flex-1">{p.title}</span>
-                {p.id === project?.id && <Check size={15} className="text-dp-accent-strong flex-shrink-0" />}
-              </button>
+                <button onClick={() => switchProject(p.id)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  <FolderKanban size={16} className="text-dp-muted-2 flex-shrink-0" />
+                  <span className="text-sm font-medium flex-1 truncate">{p.title}</span>
+                  {p.id === project?.id && <Check size={15} className="text-dp-accent-strong flex-shrink-0" />}
+                </button>
+                <button
+                  onClick={() => exportProject(p.id)}
+                  disabled={exportingProjectId === p.id}
+                  aria-label={t("exportProject")}
+                  title={t("exportProject")}
+                  className="text-dp-muted hover:text-dp-ink disabled:opacity-50 flex-shrink-0 p-1.5"
+                >
+                  <Download size={15} />
+                </button>
+              </div>
             ))}
+            {exportError && <p className="text-xs text-red-500">{t("exportError")}</p>}
           </div>
         ) : (
           <p className="text-xs text-dp-muted">{t("projectsEmpty")}</p>
@@ -421,6 +569,21 @@ export default function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection title={t("billingHeading")}>
+        {billingNotice === "success" && (
+          <p className="text-xs text-dp-green mb-3">{t("billingSuccess")}</p>
+        )}
+        {billingNotice === "cancelled" && (
+          <p className="text-xs text-dp-muted mb-3">{t("billingCancelled")}</p>
+        )}
+        {subscription?.cancel_at_period_end && (
+          <p className="text-xs text-amber-500 mb-3">
+            {t("cancelScheduled", {
+              date: subscription.current_period_end
+                ? new Date(subscription.current_period_end).toLocaleDateString()
+                : "",
+            })}
+          </p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           {PLANS.map((plan) => {
             const active = subscription?.plan === plan;
@@ -428,7 +591,7 @@ export default function SettingsPage() {
               <button
                 key={plan}
                 onClick={() => selectPlan(plan)}
-                disabled={planUpdating}
+                disabled={planUpdating || (active && !subscription?.cancel_at_period_end)}
                 className={`text-left p-4 rounded-xl border transition-colors disabled:opacity-60 ${
                   active ? "border-dp-solid bg-dp-faint" : "border-dp-border hover:border-dp-accent/40"
                 }`}
@@ -443,13 +606,58 @@ export default function SettingsPage() {
             );
           })}
         </div>
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-dp-faint mb-3">
-          <CreditCard size={16} className="text-dp-muted-2 flex-shrink-0" />
-          <span className="text-sm font-medium flex-1">{t("paymentMethodEmpty")}</span>
-          <span className="text-xs font-semibold text-dp-muted">{t("comingSoon")}</span>
-        </div>
-        <p className="text-xs text-dp-muted italic">{t("billingHistoryEmpty")}</p>
+        {subscription?.plan && subscription.plan !== "free" ? (
+          <button
+            type="button"
+            onClick={openBillingPortal}
+            disabled={planUpdating}
+            className="flex items-center gap-3 p-3 rounded-xl bg-dp-faint mb-3 w-full text-left hover:bg-dp-faint/70 transition-colors disabled:opacity-60"
+          >
+            <CreditCard size={16} className="text-dp-muted-2 flex-shrink-0" />
+            <span className="text-sm font-medium flex-1">{t("manageBilling")}</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-dp-faint mb-3">
+            <CreditCard size={16} className="text-dp-muted-2 flex-shrink-0" />
+            <span className="text-sm font-medium flex-1">{t("paymentMethodEmpty")}</span>
+          </div>
+        )}
+        {billingError && <p className="text-xs text-red-500">{billingError}</p>}
       </SettingsSection>
+
+      <SettingsSection title={t("privacyHeading")}>
+        <p className="text-xs text-dp-muted mb-3">{t("privacyBody")}</p>
+        <button
+          type="button"
+          onClick={exportAccount}
+          disabled={exportingAccount}
+          className="flex items-center gap-3 p-3 rounded-xl bg-dp-faint w-full text-left hover:bg-dp-faint/70 transition-colors disabled:opacity-60"
+        >
+          <Download size={16} className="text-dp-muted-2 flex-shrink-0" />
+          <span className="text-sm font-medium flex-1">
+            {exportingAccount ? t("privacyExporting") : t("privacyExport")}
+          </span>
+        </button>
+        {accountExportError && <p className="text-xs text-red-500 mt-2">{t("privacyExportError")}</p>}
+      </SettingsSection>
+
+      <SettingsSection title={t("dangerHeading")}>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 text-sm font-semibold text-red-500 hover:text-red-600 transition-colors"
+        >
+          <Trash2 size={15} /> {t("deleteAccount")}
+        </button>
+      </SettingsSection>
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          requiresPassword={!user?.oauth_provider}
+          onConfirm={handleDeleteAccount}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
 
       <button
         onClick={logout}

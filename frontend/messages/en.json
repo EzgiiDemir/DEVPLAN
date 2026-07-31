@@ -28,9 +28,11 @@
       "genericError": "Login failed.",
       "orDivider": "or",
       "githubButton": "Continue with GitHub",
+      "ssoButton": "Continue with Enterprise SSO",
       "mfaHeading": "Enter your authenticator code",
       "mfaCodeLabel": "6-digit code or a recovery code",
-      "mfaSubmit": "Verify"
+      "mfaSubmit": "Verify",
+      "forgotPasswordLink": "Forgot password?"
     },
     "register": {
       "heading": "Sign up for DevPlan",
@@ -44,7 +46,37 @@
       "loginLink": "Log in",
       "genericError": "Sign up failed.",
       "orDivider": "or",
-      "githubButton": "Continue with GitHub"
+      "githubButton": "Continue with GitHub",
+      "ssoButton": "Continue with Enterprise SSO"
+    },
+    "forgotPassword": {
+      "heading": "Reset your password",
+      "subheading": "We'll email you a link to get back in.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending...",
+      "sentMessage": "If an account exists for that email, a password reset link has been sent.",
+      "genericError": "Something went wrong. Try again.",
+      "backToLogin": "Back to log in"
+    },
+    "resetPassword": {
+      "heading": "Choose a new password",
+      "subheading": "Enter your new password below.",
+      "newPassword": "New password (min. 8 characters)",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "submitting": "Resetting...",
+      "missingToken": "This reset link is missing or invalid. Request a new one.",
+      "genericError": "This reset link is invalid or has expired.",
+      "backToLogin": "Back to log in"
+    },
+    "verifyEmail": {
+      "heading": "Verifying your email",
+      "verifying": "Confirming your email address...",
+      "success": "Your email address has been verified.",
+      "missingParams": "This verification link looks incomplete.",
+      "genericError": "This verification link is invalid or has expired.",
+      "backToLogin": "Back to log in"
     }
   },
   "Dashboard": {
@@ -59,7 +91,10 @@
       "descriptionPlaceholder": "Short description (optional)",
       "submit": "Create project",
       "submitting": "Creating...",
-      "genericError": "Project could not be created."
+      "genericError": "Project could not be created.",
+      "orDivider": "or",
+      "tryDemo": "Try a demo project instead",
+      "demoLoading": "Setting up your demo..."
     },
     "switcher": {
       "newProject": "New project"
@@ -68,15 +103,62 @@
       "heading": "Hi {name}, I'm Maya.",
       "startBody": "Ready to plan your idea? We'll go through 12 modules together.",
       "progressBody": "You've completed {pct}%. Shall we pick up where you left off?",
-      "allDoneBody": "You've completed all 12 modules! You're ready to start coding — I'll see you in Studio.",
+      "allDoneBody": "You've completed all 12 modules! Let's review everything before you start coding.",
       "ctaStart": "Start planning",
       "ctaContinue": "Continue",
-      "ctaStudio": "Enter Studio"
+      "ctaStudio": "Review & continue"
+    },
+    "checklist": {
+      "heading": "Getting started",
+      "items": {
+        "modules": "Complete the 12 planning modules",
+        "companion": "Connect Companion and create your local project",
+        "feature": "Generate your first feature with Maya",
+        "deploy": "Deploy your project"
+      }
     }
   },
   "ModulePage": {
     "notFound": "Module not found.",
     "placeholder": "This module's interactive interface hasn't been ported yet — it's next. Module {n}/12 ({id})."
+  },
+  "Welcome": {
+    "heading": "Welcome, {name}",
+    "subheading": "Here's how DevPlan takes your idea all the way to running code.",
+    "steps": {
+      "modules": {
+        "title": "12 planning modules",
+        "body": "Answer a few questions per module and DevPlan drafts the plan, stack, and architecture with you."
+      },
+      "maya": {
+        "title": "Maya, your AI developer",
+        "body": "Chat with Maya to generate real features, fix bugs, and explain your own codebase."
+      },
+      "studio": {
+        "title": "Studio",
+        "body": "A real code editor, terminal, and live preview — connected to your own machine via Companion."
+      }
+    },
+    "dismiss": "Close",
+    "cta": "Let's go",
+    "dismissing": "..."
+  },
+  "Review": {
+    "backToDashboard": "Back to dashboard",
+    "heading": "Project review",
+    "subheading": "One last look before you start coding — check the plan, then run a quick AI consistency check.",
+    "modulesComplete": "{done}/{total} modules complete",
+    "sprintCount": "{count} sprint(s) planned",
+    "modulesHeading": "Your 12 modules",
+    "edit": "Edit",
+    "validationHeading": "AI consistency check",
+    "validationBody": "Maya reads across all 12 modules and flags any real contradictions — e.g. a requirement your chosen stack can't support. This is informational only; it won't block you from continuing.",
+    "runValidation": "Run consistency check",
+    "runAgain": "Run again",
+    "validating": "Checking for contradictions…",
+    "validationError": "The check failed. Please try again.",
+    "noIssues": "No contradictions found.",
+    "continueToStudio": "Continue to Studio"
   },
   "Modules": {
     "idea": { "title": "Idea Validation", "sub": "Nail the problem and customer, let AI draft the pitch" },
@@ -373,6 +455,13 @@
     "checkingCompanion": "Looking for DevPlan Companion...",
     "notRunningHeading": "DevPlan Companion isn't running",
     "notRunningBody": "For Studio to check your computer, create a project folder, and run commands, DevPlan Companion needs to be open. In the companion/ folder of the project repo, run:",
+    "downloadBody": "DevPlan Companion is a small local app that lets Studio work with your own computer. Download and open it, then come back here.",
+    "downloadPlatform": {
+      "win": "Download for Windows",
+      "mac": "Download for macOS",
+      "linux": "Download for Linux"
+    },
+    "runFromSourceSummary": "I'm a developer — run it from source instead",
     "recheck": "Check again",
     "pairHeading": "Link your computer",
     "pairBody": "Enter the 6-digit code shown in the DevPlan Companion window.",
@@ -436,6 +525,7 @@
   },
   "StudioDeployment": {
     "heading": "Deployment Wizard",
+    "close": "Close deployment wizard",
     "choosePlatform": "Where do you want to deploy?",
     "platform": {
       "vercel": "Vercel",
@@ -521,7 +611,8 @@
     "remove": "Remove",
     "noOtherMembers": "Every team member already has access, or there's no one else on the team yet.",
     "loading": "Loading…",
-    "error": "Something went wrong."
+    "error": "Something went wrong.",
+    "close": "Close sharing settings"
   },
   "StudioTasks": {
     "heading": "Tasks",
@@ -727,6 +818,42 @@
     "security": "Security",
     "menuToggle": "Menu"
   },
+  "Notifications": {
+    "title": "Notifications",
+    "empty": "You're all caught up.",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "mention": "{author} mentioned you in \"{project}\"",
+    "teamInvitation": "{inviter} invited you to join {team} as {role}",
+    "deploymentSuccess": "Your deployment of \"{project}\" to {platform} succeeded",
+    "deploymentFailed": "Your deployment of \"{project}\" to {platform} failed",
+    "bellLabel": "Notifications ({count} unread)"
+  },
+  "Search": {
+    "openLabel": "Search (Ctrl+K)",
+    "title": "Search",
+    "placeholder": "Search projects, tasks, comments…",
+    "hint": "Type at least 2 characters to search.",
+    "empty": "No results found.",
+    "close": "Close",
+    "groups": {
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "features": "Features",
+      "comments": "Comments",
+      "module_items": "Module content"
+    }
+  },
+  "DeleteAccountModal": {
+    "title": "Delete your account",
+    "warning": "This permanently deletes your account, your personal projects, and everything in them. This cannot be undone.",
+    "passwordLabel": "Confirm your password to continue",
+    "confirm": "Permanently delete my account",
+    "confirming": "Deleting…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "genericError": "Something went wrong. Please try again."
+  },
   "About": {
     "kicker": "ABOUT US",
     "heading": "We shorten the road from idea to code.",
@@ -782,15 +909,29 @@
     "themeDark": "Dark",
     "projectsHeading": "Your projects",
     "projectsEmpty": "You don't have a project yet.",
+    "exportProject": "Download project backup (.zip)",
+    "exportError": "That export failed. Please try again.",
+    "privacyHeading": "Privacy & data",
+    "privacyBody": "Download a full copy of everything DevPlan holds about your account — your profile, teams, subscription, audit history, notifications, and every project you can access.",
+    "privacyExport": "Download my data (.zip)",
+    "privacyExporting": "Preparing your export…",
+    "privacyExportError": "That export failed. Please try again.",
+    "dangerHeading": "Danger zone",
+    "deleteAccount": "Delete my account",
     "billingHeading": "Subscription",
     "plans": {
       "free": { "name": "Free", "price": "$0 / month", "body": "1 project, all 12 modules, basic AI usage." },
       "pro": { "name": "Pro", "price": "$19 / month", "body": "Unlimited projects, priority AI responses, expanded file space in Studio." },
       "team": { "name": "Team", "price": "$49 / month", "body": "Everything in Pro, plus projects shared with your teammates." }
     },
+    "verificationNeeded": "Please verify your email address.",
+    "verificationResent": "Verification email sent — check your inbox.",
+    "resendVerification": "Resend email",
     "paymentMethodEmpty": "No payment method on file",
-    "comingSoon": "Coming soon",
-    "billingHistoryEmpty": "You don't have any billing history yet.",
+    "manageBilling": "Manage billing",
+    "billingSuccess": "Subscription confirmed — this can take a few seconds to reflect below.",
+    "billingCancelled": "Checkout was cancelled — your plan is unchanged.",
+    "cancelScheduled": "Your plan will drop to Free on {date}. Pick a plan above to keep it instead.",
     "logout": "Log out",
     "twoFactorHeading": "Two-factor authentication",
     "twoFactorBody": "Add a second step at login using an authenticator app (Google Authenticator, Authy, 1Password, etc.).",

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\User;
+use App\Notifications\MentionNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +28,11 @@ class CommentService
 
             foreach ($this->resolveMentions($project, $body) as $mentionedUser) {
                 $comment->mentions()->create(['mentioned_user_id' => $mentionedUser->id]);
+                // Not the author mentioning themselves — no one needs to be
+                // notified that they wrote their own name.
+                if ($mentionedUser->id !== $author->id) {
+                    $mentionedUser->notify(new MentionNotification($comment, $author, $project));
+                }
             }
 
             return $comment->load(['user:id,name,email', 'mentions.mentionedUser:id,name']);

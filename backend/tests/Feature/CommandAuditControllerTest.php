@@ -16,9 +16,9 @@ class CommandAuditControllerTest extends TestCase
     public function test_a_developer_can_relay_a_real_executed_command(): void
     {
         $user = User::factory()->create();
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Audit Test'])->json();
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Audit Test'])->json();
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project['id']}/audit/commands", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project['id']}/audit/commands", [
             'type' => 'command',
             'command' => 'git push --force',
             'risk_level' => 'dangerous',
@@ -36,9 +36,9 @@ class CommandAuditControllerTest extends TestCase
     public function test_a_relayed_file_delete_is_recorded_as_its_own_action(): void
     {
         $user = User::factory()->create();
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Audit Test'])->json();
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Audit Test'])->json();
 
-        $this->actingAs($user)->postJson("/api/projects/{$project['id']}/audit/commands", [
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project['id']}/audit/commands", [
             'type' => 'file_delete',
             'path' => 'src/old-file.js',
             'risk_level' => 'sensitive',
@@ -57,9 +57,9 @@ class CommandAuditControllerTest extends TestCase
         Log::spy();
 
         $user = User::factory()->create();
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Audit Test'])->json();
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Audit Test'])->json();
 
-        $this->actingAs($user)->postJson("/api/projects/{$project['id']}/audit/commands", [
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project['id']}/audit/commands", [
             'type' => 'command',
             'command' => 'git push --force',
             'risk_level' => 'dangerous',
@@ -76,9 +76,9 @@ class CommandAuditControllerTest extends TestCase
         Log::spy();
 
         $user = User::factory()->create();
-        $project = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Audit Test'])->json();
+        $project = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Audit Test'])->json();
 
-        $this->actingAs($user)->postJson("/api/projects/{$project['id']}/audit/commands", [
+        $this->actingAs($user)->postJson("/api/v1/projects/{$project['id']}/audit/commands", [
             'type' => 'command',
             'command' => 'npm install',
             'risk_level' => 'safe',
@@ -96,7 +96,7 @@ class CommandAuditControllerTest extends TestCase
         TeamMember::create(['team_id' => $team->id, 'user_id' => $viewer->id, 'role' => 'viewer']);
         $project = $owner->projects()->create(['team_id' => $team->id, 'title' => 'Audit Test']);
 
-        $this->actingAs($viewer)->postJson("/api/projects/{$project->id}/audit/commands", [
+        $this->actingAs($viewer)->postJson("/api/v1/projects/{$project->id}/audit/commands", [
             'type' => 'command',
             'command' => 'npm install',
             'risk_level' => 'safe',

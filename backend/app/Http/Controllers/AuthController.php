@@ -35,6 +35,7 @@ class AuthController extends Controller
 
         $this->teams->ensurePersonalTeam($user);
         $this->audit->record($user, 'auth.register');
+        $user->sendEmailVerificationNotification();
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();

@@ -91,6 +91,20 @@ export function AuthProvider({ children }) {
     });
   }
 
+  async function completeOnboarding() {
+    const updated = await apiFetch("/onboarding/complete", { method: "POST" });
+    setUser(updated);
+  }
+
+  async function deleteAccount(currentPassword) {
+    await apiFetch("/account", {
+      method: "DELETE",
+      body: JSON.stringify(currentPassword ? { current_password: currentPassword } : {}),
+    });
+    localStorage.removeItem(SESSION_HINT_KEY);
+    setUser(null);
+  }
+
   // For when the backend says 401 on a request that assumed we were logged
   // in (e.g. session pointed at a user that no longer exists). No network
   // call — the server has already told us the session is dead.
@@ -101,7 +115,19 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, register, login, loginWithMfa, logout, clearSession, updateName, updatePassword }}
+      value={{
+        user,
+        loading,
+        register,
+        login,
+        loginWithMfa,
+        logout,
+        clearSession,
+        updateName,
+        updatePassword,
+        completeOnboarding,
+        deleteAccount,
+      }}
     >
       {children}
     </AuthContext.Provider>

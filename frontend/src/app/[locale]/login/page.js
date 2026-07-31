@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Building2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
@@ -11,6 +12,11 @@ import { GithubIcon } from "@/components/icons/GithubIcon";
 
 async function startGithubLogin() {
   const result = await apiFetch("/oauth/github/redirect");
+  window.location.href = result.url;
+}
+
+async function startOidcLogin() {
+  const result = await apiFetch("/oauth/oidc/redirect");
   window.location.href = result.url;
 }
 
@@ -107,6 +113,9 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="rounded-xl border border-dp-border bg-dp-faint focus:bg-dp-panel focus:border-dp-accent px-4 py-3 text-sm w-full outline-none transition-colors"
               />
+              <Link href="/forgot-password" className="text-xs text-dp-accent-strong font-semibold self-end -mt-1">
+                {t("forgotPasswordLink")}
+              </Link>
               {error && <p className="text-xs text-red-500">{error}</p>}
               <button
                 type="submit"
@@ -129,6 +138,14 @@ export default function LoginPage() {
               className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
             >
               <GithubIcon size={16} /> {t("githubButton")}
+            </button>
+
+            <button
+              type="button"
+              onClick={startOidcLogin}
+              className="flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 mt-2 rounded-full border border-dp-border hover:bg-dp-faint transition-colors w-full"
+            >
+              <Building2 size={16} /> {t("ssoButton")}
             </button>
           </>
         )}

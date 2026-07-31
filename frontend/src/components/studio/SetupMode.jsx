@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, ExternalLink, FolderPlus, RefreshCw, X } from "lucide-react";
+import { Check, ExternalLink, FolderPlus, X } from "lucide-react";
 import { useCompanion } from "@/lib/companion-context";
-import { TinyBtn } from "@/components/ui/Buttons";
 import { Chip } from "@/components/ui/Chip";
+import { CompanionDownload } from "./CompanionDownload";
 
 const LOCATIONS = ["desktop", "documents", "downloads", "custom"];
 
@@ -92,21 +92,7 @@ export function SetupMode({ project, onProjectReady }) {
   }
 
   if (!companion.available) {
-    return (
-      <div className="max-w-lg mx-auto w-full px-4 sm:px-6 py-16">
-        <div className="text-[11px] font-semibold text-dp-accent-strong uppercase tracking-wider mb-3">
-          {t("kicker")}
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-3">{t("notRunningHeading")}</h1>
-        <p className="text-sm text-dp-muted mb-5 leading-relaxed">{t("notRunningBody")}</p>
-        <pre className="bg-dp-panel border border-dp-border rounded-xl p-4 text-xs font-mono mb-5 overflow-x-auto">
-          cd companion{"\n"}npm install{"\n"}npm start
-        </pre>
-        <TinyBtn onClick={companion.ping}>
-          <RefreshCw size={13} /> {t("recheck")}
-        </TinyBtn>
-      </div>
-    );
+    return <CompanionDownload onRecheck={companion.ping} />;
   }
 
   if (!companion.paired) {

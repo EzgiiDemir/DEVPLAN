@@ -13,7 +13,7 @@ class QualityControllerTest extends TestCase
 
     private function projectFor(User $user): Project
     {
-        $response = $this->actingAs($user)->postJson('/api/projects', ['title' => 'Quality Test']);
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', ['title' => 'Quality Test']);
 
         return Project::findOrFail($response->json('id'));
     }
@@ -23,7 +23,7 @@ class QualityControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->projectFor($user);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/quality/detect", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/quality/detect", [
             'has_package_json' => true,
             'has_eslint_config' => false,
         ]);
@@ -55,7 +55,7 @@ class QualityControllerTest extends TestCase
             'metadata' => ['vulnerabilities' => ['critical' => 0, 'high' => 1, 'moderate' => 0, 'low' => 0]],
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/projects/{$project->id}/quality/scan", [
+        $response = $this->actingAs($user)->postJson("/api/v1/projects/{$project->id}/quality/scan", [
             'npm_audit_json' => $npmAuditJson,
         ]);
 
@@ -64,7 +64,7 @@ class QualityControllerTest extends TestCase
             ->assertJsonPath('coverage_percent', 82.5)
             ->assertJsonPath('performance', null);
 
-        $fresh = $this->actingAs($user)->getJson("/api/projects/{$project->id}/quality");
+        $fresh = $this->actingAs($user)->getJson("/api/v1/projects/{$project->id}/quality");
         $fresh->assertOk()->assertJsonPath('security.high', 1);
 
         $this->assertDatabaseHas('projects', ['id' => $project->id]);
@@ -78,7 +78,7 @@ class QualityControllerTest extends TestCase
         $intruder = User::factory()->create();
         $project = $this->projectFor($owner);
 
-        $this->actingAs($intruder)->getJson("/api/projects/{$project->id}/quality")->assertForbidden();
-        $this->actingAs($intruder)->postJson("/api/projects/{$project->id}/quality/scan", [])->assertForbidden();
+        $this->actingAs($intruder)->getJson("/api/v1/projects/{$project->id}/quality")->assertForbidden();
+        $this->actingAs($intruder)->postJson("/api/v1/projects/{$project->id}/quality/scan", [])->assertForbidden();
     }
 }

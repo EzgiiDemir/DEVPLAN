@@ -1,5 +1,7 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8010/api";
-const API_HOST = API_BASE_URL.replace(/\/api\/?$/, "");
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8010/api/v1";
+// Strips the versioned /api/v1 (or bare /api) suffix — Sanctum's CSRF
+// cookie route lives under web.php, unversioned, not under /api at all.
+const API_HOST = API_BASE_URL.replace(/\/api(\/v\d+)?\/?$/, "");
 
 function readCookie(name) {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));

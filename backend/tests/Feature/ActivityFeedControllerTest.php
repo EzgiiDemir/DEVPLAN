@@ -23,7 +23,7 @@ class ActivityFeedControllerTest extends TestCase
         $project->tasks()->create(['title' => 'Write docs', 'status' => 'todo']);
         $project->comments()->create(['project_id' => $project->id, 'commentable_type' => 'project', 'commentable_id' => $project->id, 'user_id' => $owner->id, 'body' => 'Looks good']);
 
-        $response = $this->actingAs($owner)->getJson("/api/projects/{$project->id}/activity");
+        $response = $this->actingAs($owner)->getJson("/api/v1/projects/{$project->id}/activity");
 
         $response->assertOk();
         $types = collect($response->json())->pluck('type')->all();
@@ -43,6 +43,6 @@ class ActivityFeedControllerTest extends TestCase
         TeamMember::create(['team_id' => $team->id, 'user_id' => $owner->id, 'role' => 'owner']);
         $project = $owner->projects()->create(['team_id' => $team->id, 'title' => 'Feed Project']);
 
-        $this->actingAs($outsider)->getJson("/api/projects/{$project->id}/activity")->assertForbidden();
+        $this->actingAs($outsider)->getJson("/api/v1/projects/{$project->id}/activity")->assertForbidden();
     }
 }
